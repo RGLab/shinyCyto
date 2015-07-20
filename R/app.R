@@ -19,9 +19,8 @@ ui <-   navbarPage("OpenCyto",
                           div(fileInput("filechooser",h5("Upload FCS Files and/or XML workspaces"), multiple = TRUE),
                           h6(DT::dataTableOutput(outputId = "chooser")), style = 'width:90%;'),
                           actionButton("parse_chosen",label="Import Files"),
-                          div(verbatimTextOutput("message1"),style='width:90%'),
-                          hidden(div(div(uiOutput("workspaceGroups"),style="display:inline-block"),div(textOutput("nsamples"),style="display:inline-block"),style='width:90%')),
-                          hidden(actionButton("parseGroup",label = "Parse Workspace"))
+                          hidden(div(div(actionButton("parseGroup",label = "Parse Workspace"),style="display:inline-block"),div(uiOutput("workspaceGroups"),style="display:inline-block"),div(textOutput("nsamples"),style="display:inline-block"),style='width:90%',id="parseUI")),
+                          div(verbatimTextOutput("message1"),style='width:90%')
                           ),
                  
                  tabPanel("Existing Data",
@@ -76,10 +75,14 @@ server <- function(input, output,session){
     if(length(.getFileName())==0){
       shinyjs::hide("workspaceGroups")
       shinyjs::hide("parseGroup")
+      shinyjs::hide("nsamples")
+      shinyjs::hide("parseUI")
     }else if(grepl("\\.xml",.getFileName())){
       shinyjs::show("workspaceGroups")
       shinyjs::show("parseGroup")
+      shinyjs::show("nsamples")
       shinyjs::disable("parseGroup")
+      shinyjs::show("parseUI")
     }
   })
   
@@ -112,7 +115,7 @@ server <- function(input, output,session){
             cat("Successfully copied all files.\n")
             cat("Parsing\n")
             })
-          ws = openWorkspace(file.path(tmp,tbl[,name]))
+          ws <<- openWorkspace(file.path(tmp,tbl[name%in%input$chooser_rows_selected,name]))
           groups = getSampleGroups(ws)
           samples = getSamples(ws)
           setDT(groups)
@@ -124,9 +127,11 @@ server <- function(input, output,session){
               cat("Successfully read workspace! Ready to parse FCS files.")
             }
           })
-          output$workspaceGroups = renderUI(selectInput("workspaceGroups",label = "Workspace Groups", choices = as.character(groups[,unique(groupName)])))
+          groups = unique(groups[,.(groupName,groupID)])
+          groups = groups[,.(ID = .I),.(groupName,groupID)]
+          output$workspaceGroups = renderUI(selectInput("workspaceGroups",label = "Workspace Groups", choices = plyr::dlply(groups,.variables="groupName",.fun=function(x)x$ID)))
           observeEvent(input$workspaceGroups,{
-            output$nsamples = renderText(paste0(groups[,.N,.(groupName)][groupName==input$workspaceGroups,N]," samples"))
+            output$nsamples = renderText(paste0(groups[,.N,.(groupID)][groupID==input$workspaceGroups,N]," samples"))
           })
         }else{
           output$message1 = renderPrint(cat("Failed to copy :",tbl[!copy_success,name],"\n"))
@@ -145,7 +150,7 @@ server <- function(input, output,session){
           fs = try(read.ncdfFlowSet(file.path(tmp,tbl[,name])))
           if(!inherits(fs,"try-error")){
             output$message1 = renderPrint(cat("Created ncdfFlowSet."))
-            gs = try(GatingSet(fs))
+            gs <<- try(GatingSet(fs))
             if(!inherits(gs,"try-error")){
               output$message1 = renderPrint({cat("GatingSet successfully created!")})
             }else{
@@ -162,6 +167,17 @@ server <- function(input, output,session){
         output$message1 = renderPrint(cat("Please choose an xml file or some FCS files and click 'parse' to create a gating set.\n"))
       }
     # })
+  })
+  
+  observeEvent(input$parseGroup,{
+    gs <<-try(parseWorkspace(ws,name = as.numeric(input$workspaceGroups),path=ws@path))
+    if(inherits(gs,"try-error")){
+      output$message1 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
+    }else if(class(gs)=="GatingSet"){
+      output$message1 = renderText(paste0("Success!\n",capture.output(print(gs))))
+    }else{
+      output$message1 = renderText("gs is a ",class(gs))
+    }
   })
   
   # Refresh / filter existing data -----------------------------------------
@@ -181,7 +197,7 @@ server <- function(input, output,session){
     output$message = renderPrint(cat("Choose a dataset"))
     s = input$existing_data_rows_selected
     if(length(s)){
-      gs = try(load_gs(path = s))
+      gs <<- try(load_gs(path = s))
       if(inherits(gs,"try-error")){
         output$message = renderPrint(cat("Not a gating set"))
       }else{
