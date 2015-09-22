@@ -7,7 +7,7 @@ library(networkD3)
 library(ggcyto)
 library(DT)
 library(hash)
-
+library(shinyFiles)
 H = hash()
 
 maketreelist <- function(df, root=df[1,1]) {
@@ -45,7 +45,12 @@ ui <-   navbarPage("OpenCyto",
                navlistPanel(
                  tabPanel("Import",
                           tags$br(),
-                          div(div(textInput("path_import",label = "Pick a directory of FCS files and/or workspaces.",value = "../inst/extdata"),style="display:inline-block;"),div(actionButton(inputId = "refresh_import",label = "Scan"),style="display:inline-block;"),style="display:inline-block;"),
+                          div(div(shinyDirButton("dir_btn",label = "choose...", title = "Please select a folder", buttonType = "primary")
+                                  ,style="display:inline-block;")
+                              , div(textInput("path_import",label = "workspaces path"), style="display:inline-block;")
+                              ,div(actionButton(inputId = "refresh_import",label = "Scan")
+                                   ,style="display:inline-block;")
+                              ,style="display:inline-block;"),
                           div(h6(DT::dataTableOutput(outputId = "file_table",))),
                           actionButton("parse_chosen",label="Import Files"),
                           hidden(div(div(actionButton("parseGroup",label = "Parse Workspace"),style="display:inline-block;"),div(uiOutput("workspaceGroups"),style="display:inline-block"),div(textOutput("nsamples"),style="display:inline-block"),style='width:90%',id="parseUI")),
@@ -86,6 +91,12 @@ server <- function(input, output,session){
 #     df[name%in%s,datapath]
 #   }
 #   })
+  shinyDirChoose(input, "dir_btn", session = session, roots = c(wd='~'))
+  
+  observeEvent(input$dir_btn, {
+    
+    updateTextInput(session,'path_import', value = input$dir_btn[["path"]][[2]])
+  })
   
   rv = reactiveValues()
   observeEvent(rv$gs,{
@@ -102,6 +113,7 @@ server <- function(input, output,session){
   
   observeEvent(input$refresh_import,{
     datadirectory=input$path_import
+    
     output$file_table = DT::renderDataTable(
       data.table(data=list.files(
         datadirectory, full.names = TRUE, recursive = FALSE
