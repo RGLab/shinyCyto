@@ -59,7 +59,8 @@ ui <-   navbarPage("OpenCyto",
                    actionButton(inputId = "load",label = "Load Data"),
                    div(verbatimTextOutput("message"),style='width:90%')
                    
-                 ),useShinyjs(),extendShinyjs(script = "www/actions.js")
+                 ),useShinyjs()
+                 # ,extendShinyjs(script = "www/actions.js")
 ,id="datanavlist"
                )
                
@@ -94,9 +95,9 @@ server <- function(input, output,session){
     })
   })
   
-  observeEvent(input$tabset,{
-    js$fire()
-  })
+#   observeEvent(input$tabset,{
+#     js$fire()
+#   })
 
   
   observeEvent(input$refresh_import,{
