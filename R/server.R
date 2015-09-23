@@ -39,7 +39,9 @@ maketreelist <- function(df, root=df[1,1]) {
   }
   
 }
-datadirectory = "../inst/extdata"
+
+datadirectory = "~/rglab/workspace/analysis/sony"
+roots <- c(home = "~/rglab/workspace/analysis/sony")
 function(input, output,session){
   MAX_MB_UPLOAD = 1024 # one Gb limit.
   options(shiny.maxRequestSize=MAX_MB_UPLOAD*1024^2)
@@ -52,11 +54,12 @@ function(input, output,session){
 #     df[name%in%s,datapath]
 #   }
 #   })
-  shinyDirChoose(input, "dir_btn", session = session, roots = c(wd='~'))
+  # select ws folder
+  shinyDirChoose(input, "ws_dir_btn", session = session, roots = roots)
   
-  observeEvent(input$dir_btn, {
-    
-    updateTextInput(session,'path_import', value = input$dir_btn[["path"]][[2]])
+  observeEvent(input$ws_dir_btn, {
+    path_selected <- parseDirPath(roots, input$ws_dir_btn)
+    updateTextInput(session,'path_import', value = path_selected)
   })
   
   rv = reactiveValues()
@@ -78,7 +81,7 @@ function(input, output,session){
     output$file_table = DT::renderDataTable(
       data.table(data=list.files(
         datadirectory, full.names = TRUE, recursive = FALSE
-      ))[(data %like% "fcs" | data %like% "xml")]
+      ))[(data %like% "fcs" | data %like% "xml"| data %like% "wsp")]
       ,rownames = FALSE,selection = "multiple")
     output$message1 = renderPrint(cat("Select an xml file, or a set of FCS files."))
     shinyjs::disable("parse_chosen")
@@ -121,22 +124,19 @@ function(input, output,session){
     }
   })
   
-  # Refresh / filter existing data -----------------------------------------
-  observeEvent(input$refresh,{
-    datadirectory=input$path
-    output$existing_data = DT::renderDataTable(
-      data.table(data=list.files(
-        datadirectory, full.names = TRUE, recursive = FALSE
-      ))[,.(isdir=file.info(data)$isdir),.(data)][!(data %like% "fcs" | data %like% "xml")][isdir==TRUE]
-      ,rownames = FALSE,selection = "single")
+  # select gs folder
+  shinyDirChoose(input, "gs_dir_btn", session = session, roots = roots)
+  observeEvent(input$gs_dir_btn, {
+    
+    path_selected <- parseDirPath(roots, input$gs_dir_btn)
+    updateTextInput(session,'path_gs', value = path_selected)
   })
-  
-  output$chooser = DT::renderDataTable(input$filechooser[,c("name","size")],rownames=FALSE, selection='multiple')
   
   
   observeEvent(input$load,{
     output$message = renderPrint(cat("Choose a dataset"))
-    s = input$existing_data_rows_selected
+    
+    s = input$path_gs
     if(is.null(s)){
       output$message = renderPrint(cat("Choose a some files above"))
       return(NA)
