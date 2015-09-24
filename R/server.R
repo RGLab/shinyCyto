@@ -27,7 +27,7 @@ maketreelist <- function(df, root=df[1,1]) {
   if(!all(lengths(x)>0)){
     return(FALSE)
   }
-  unlist(lapply(x,function(x)all(grepl("*.pb",x)|grepl("*.dat",x)|grepl("*.nc",x)|grepl("*.rds",x))))
+  unlist(lapply(x,function(x)all(grepl("*.pb",x)|grepl("*.dat",x)|grepl("*.txt",x)|grepl("*.nc",x)|grepl("*.rds",x))))
 }
 .isGatingSetList = function(x){
   x = lapply(x,function(x)list.files(as.character(x),recursive=FALSE))
@@ -40,8 +40,8 @@ maketreelist <- function(df, root=df[1,1]) {
   
 }
 
-datadirectory = "~/rglab/workspace/analysis/sony"
-roots <- c(home = "~/rglab/workspace/analysis/sony")
+
+roots <- c(home = system.file("extdata",package = "flowWorkspaceData")) #"~/rglab/workspace/analysis/sony"
 function(input, output,session){
   MAX_MB_UPLOAD = 1024 # one Gb limit.
   options(shiny.maxRequestSize=MAX_MB_UPLOAD*1024^2)

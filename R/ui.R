@@ -24,7 +24,7 @@ myActionButton <- function (inputId, label, icon = NULL, ...)
               list(icon, label), ...)
 }
   
-datadirectory = "~/rglab/workspace/analysis/sony"
+datadirectory = system.file("extdata",package = "flowWorkspaceData")#"~/rglab/workspace/analysis/sony1"
 
 body <- dashboardBody(
   tabItems(
