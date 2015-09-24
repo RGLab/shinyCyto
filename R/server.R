@@ -70,9 +70,9 @@ function(input, output,session){
     })
   })
   
-#   observeEvent(input$tabset,{
-#     js$fire()
-#   })
+  observeEvent(input$tabset,{
+    js$fire()
+  })
 
   
   observeEvent(input$refresh_import,{
