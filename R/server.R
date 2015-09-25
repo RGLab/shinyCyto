@@ -91,8 +91,25 @@ function(input, output,session){
   observeEvent(input$parse_chosen,{
       if (length(input$file_table_rows_selected)) {
         tbl = input$file_table_rows_selected
-        if(grepl("\\.xml$",tbl)){
+        if(grepl("\\.(xml)|(wsp)$",tbl)){
           output$message1 = renderPrint(cat("parsing xml."))
+          
+          ws <- openWorkspace(tbl)
+          #sample info  
+          allSamples <- getSamples(ws)
+          # group Info
+          g <- getSampleGroups(ws)
+          # merge two
+          sg <- merge(allSamples, g, by="sampleID");
+          
+          sg <- sg[sg$pop.counts>0,]
+          
+          # filter by group name
+          sg$groupName<-factor(sg$groupName)
+          groups<-levels(sg$groupName)
+          updateSelectInput(session, "grp_selected", choices = groups)
+          shinyjs::show("grp_select_tab")
+          shinyjs::hide("ws_select_tab")
         }else if(all(grepl("\\.fcs$",tbl))){
           output$message1 = renderPrint(cat("parsing fcs."))
         }
@@ -102,15 +119,17 @@ function(input, output,session){
   observeEvent(input$file_table_rows_selected,{
     if (length(input$file_table_rows_selected)) {
       tbl = input$file_table_rows_selected
-      if(sum(grepl("\\.xml$",tbl))==1&length(input$file_table_rows_selected)==1){
+      
+      if(sum(grepl("\\.(xml)|(wsp)$",tbl))==1&length(input$file_table_rows_selected)==1){
         shinyjs::enable("parse_chosen")
       }else if(all(grepl("\\.fcs$",tbl))){
-        shinyjs::enable("parse_chosen")
+        shinyjs::disable("parse_chosen")
       }else {
         output$message1 = renderPrint(cat("Select an xml file, or a set of FCS files."))
         shinyjs::disable("parse_chosen")
       }
     }
+      
   })
   
   observeEvent(input$parseGroup,{

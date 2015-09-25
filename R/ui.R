@@ -10,7 +10,7 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Data", tabName = "Data",icon = icon("database"),
             menuSubItem("Import workspaces", tabName = "Import", icon = icon("arrow-right"), selected = TRUE),
-            menuSubItem("Load GatingSets", tabName = "Load", icon = icon("folder-open"), selected = TRUE)
+            menuSubItem("Load GatingSets", tabName = "Load", icon = icon("folder-open"))
             ),
     menuItem("Compensate & Transform", tabName = "Compensate", icon = icon("exchange")),
     menuItem("Build a Gating Template",tabName = "GatingTemplate", icon = icon("table")),
@@ -30,17 +30,36 @@ datadirectory = system.file("extdata",package = "flowWorkspaceData")#"~/rglab/wo
 body <- dashboardBody(
   tabItems(
     tabItem("Data", title = "Data", h1("Please choose submenu: 'Import workspaces' or 'Load GatingSet'")),
-    tabItem("Import",
-            box(
-                shinyDirButton("ws_dir_btn",label = "choose...", title = "Please select a folder", buttonType = "primary"),
-                textInput("path_import",label = "workspaces path", value = datadirectory),
-                myActionButton(inputId = "refresh_import",label = "Scan"),
-                div(h6(DT::dataTableOutput(outputId = "file_table",))),
-                myActionButton("parse_chosen",label="Import Files"),
-                hidden(div(div(actionButton("parseGroup",label = "Parse Workspace"),style="display:inline-block;"),div(uiOutput("workspaceGroups"),style="display:inline-block"),div(textOutput("nsamples"),style="display:inline-block"),style='width:90%',id="parseUI")),
-                div(verbatimTextOutput("message1"),style='width:90%'),
-                title = "Import workspaces", solidHeader = TRUE, status = "primary", width = NULL
-              )
+    tabItem("Import", title = "Import"
+                       
+                  , div(
+                      div(textInput("path_import",label = "workspaces path", value = datadirectory), style="display:inline-block")
+                      ,div(shinyDirButton("ws_dir_btn",label = "choose...", title = "Please select a folder", buttonType = "primary"),style="display:inline-block")
+                        
+                      , myActionButton(inputId = "refresh_import",label = "Scan")
+                        
+                        , div(h6(DT::dataTableOutput(outputId = "file_table")))
+                        ,div(verbatimTextOutput("message1"),style='width:90%')           
+                        , disabled(myActionButton("parse_chosen",label="next-->"))
+                        , id = "ws_select_tab" 
+                        )
+      
+                    
+                       
+                    
+                        
+                  , hidden(div(selectInput("grp_selected", choices = "", label = "Groups:")
+                              ,id = "grp_select_tab"
+                             ))
+                  
+                  , hidden(div(div(myActionButton("parseGroup",label = "Parse Workspace")
+                                   ,style="display:inline-block;")
+                               ,div(uiOutput("workspaceGroups"),style="display:inline-block")
+                               ,div(textOutput("nsamples"),style="display:inline-block")
+                               ,style='width:90%',id="parseUI"
+                  ))
+                  
+            
             ),
     tabItem("Load",
             box(
