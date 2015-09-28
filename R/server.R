@@ -5,6 +5,7 @@ library(shinyjs)
 library(data.table)
 library(networkD3)
 library(ggcyto)
+if (packageVersion('DT') < '0.1.3') devtools::install_github('rstudio/DT')
 library(DT)
 library(hash)
 library(shinyFiles)
@@ -75,30 +76,61 @@ function(input, output,session){
   })
 
   
-  observeEvent(input$refresh_import,{
-    datadirectory=input$path_import
-    
-    output$file_table = DT::renderDataTable(
-      data.table(data=list.files(
-        datadirectory, full.names = TRUE, recursive = FALSE
-      ))[(data %like% "fcs" | data %like% "xml"| data %like% "wsp")]
-      ,rownames = FALSE,selection = "multiple")
-    output$message1 = renderPrint(cat("Select an xml file, or a set of FCS files."))
-    shinyjs::disable("parse_chosen")
-  })
+  #-------- read file info selected folder--------
   
-
-  observeEvent(input$parse_chosen,{
-      if (length(input$file_table_rows_selected)) {
-        tbl = input$file_table_rows_selected
-        if(grepl("\\.(xml)|(wsp)$",tbl)){
-          output$message1 = renderPrint(cat("parsing xml."))
+  # observeEvent(input$refresh_import,{
+  ws_list <- reactive(data.table(data=list.files(input$path_import
+                                                 , full.names = TRUE
+                                                 , recursive = TRUE
+                                                )
+                                 )[(data %like% "xml"| data %like% "wsp")]
+                          )
+  
+  ws_count <- reactive(nrow(ws_list()))
+  
+  #-------- fill the DT with file info --------
+  output$file_table = DT::renderDataTable(ws_list(),rownames = FALSE
+                                          , selection = list(mode = "multiple", selected = 2)
+                                          )
+  
+  #-------- update the message and button based on the file info--------  
+  observeEvent(ws_count(), {
+          if(ws_count() >= 1){
+            output$message1 = renderPrint(cat("Select an xml file."))
+            shinyjs::show("message1")
+          }else{
+            shinyjs::hide("message1")
+          }
           
-          ws <- openWorkspace(tbl)
+    })
+    
+  # })
+  
+  #-------- update message and button based on the selected rows--------
+  ws_selected <- reactive(input$file_table_rows_selected)
+  ws_selected_count <- reactive(length(ws_selected()))
+  
+  observeEvent(ws_selected_count(),{
+    if (ws_selected_count() >= 1) {
+        shinyjs::enable("open_ws")
+        shinyjs::hide("message1")
+      }else {
+        shinyjs::disable("open_ws")
+        shinyjs::show("message1")
+      }
+    
+    
+  })
+
+  #-------- populate the group selectInput with the selected ws--------
+  observeEvent(input$open_ws,{
+      if (ws_selected_count() == 1) {
+        
+          rv$ws <<- openWorkspace(ws_list()[ws_selected(), data])
           #sample info  
-          allSamples <- getSamples(ws)
+          allSamples <- getSamples(rv$ws)
           # group Info
-          g <- getSampleGroups(ws)
+          g <- getSampleGroups(rv$ws)
           # merge two
           sg <- merge(allSamples, g, by="sampleID");
           
@@ -107,39 +139,41 @@ function(input, output,session){
           # filter by group name
           sg$groupName<-factor(sg$groupName)
           groups<-levels(sg$groupName)
-          updateSelectInput(session, "grp_selected", choices = groups)
+          updateSelectInput(session, "grp_selected"
+                            , choices = c(`select a group ---` = '', groups)
+                            , label = NULL
+                            )
+          shinyjs::disable("parse_ws")
           shinyjs::show("grp_select_tab")
           shinyjs::hide("ws_select_tab")
-        }else if(all(grepl("\\.fcs$",tbl))){
-          output$message1 = renderPrint(cat("parsing fcs."))
-        }
+          
+          
+          
       }
-  })
-
-  observeEvent(input$file_table_rows_selected,{
-    if (length(input$file_table_rows_selected)) {
-      tbl = input$file_table_rows_selected
-      
-      if(sum(grepl("\\.(xml)|(wsp)$",tbl))==1&length(input$file_table_rows_selected)==1){
-        shinyjs::enable("parse_chosen")
-      }else if(all(grepl("\\.fcs$",tbl))){
-        shinyjs::disable("parse_chosen")
-      }else {
-        output$message1 = renderPrint(cat("Select an xml file, or a set of FCS files."))
-        shinyjs::disable("parse_chosen")
-      }
-    }
-      
   })
   
-  observeEvent(input$parseGroup,{
-    rv$gs <<-try(parseWorkspace(ws,name = as.numeric(input$workspaceGroups),path=ws@path))
+  observeEvent(input$back_to_ws, {
+    shinyjs::disable("parse_ws")
+    shinyjs::hide("grp_select_tab")
+    shinyjs::show("ws_select_tab")
+    
+  })
+  
+  observeEvent(input$grp_selected, {
+    
+    shinyjs::enable("parse_ws")
+  })
+  
+  observeEvent(input$parse_ws,{
+    shinyjs::show("message2")
+    rv$gs <<-try(parseWorkspace(rv$ws,name = input$grp_selected))
+    gs <- rv$gs
     if(inherits(gs,"try-error")){
-      output$message1 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
+      output$message2 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
     }else if(class(gs)=="GatingSet"){
-      output$message1 = renderText(paste0("Success!\n",capture.output(print(gs))))
+      output$message2 = renderText(paste0("Success!\n",capture.output(print(gs))))
     }else{
-      output$message1 = renderText("gs is a ",class(gs))
+      output$message2 = renderText("gs is a ",class(gs))
     }
   })
   

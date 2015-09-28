@@ -36,11 +36,11 @@ body <- dashboardBody(
                       div(textInput("path_import",label = "workspaces path", value = datadirectory), style="display:inline-block")
                       ,div(shinyDirButton("ws_dir_btn",label = "choose...", title = "Please select a folder", buttonType = "primary"),style="display:inline-block")
                         
-                      , myActionButton(inputId = "refresh_import",label = "Scan")
+                      # , myActionButton(inputId = "refresh_import",label = "Scan")
                         
                         , div(h6(DT::dataTableOutput(outputId = "file_table")))
-                        ,div(verbatimTextOutput("message1"),style='width:90%')           
-                        , disabled(myActionButton("parse_chosen",label="next-->"))
+                         ,verbatimTextOutput("message1")
+                        , myActionButton("open_ws",label="next-->")
                         , id = "ws_select_tab" 
                         )
       
@@ -48,18 +48,18 @@ body <- dashboardBody(
                        
                     
                         
-                  , hidden(div(selectInput("grp_selected", choices = "", label = "Groups:")
-                              ,id = "grp_select_tab"
-                             ))
+                  , hidden(div(selectInput("grp_selected"
+                                              , choices = ''
+                                              , label = NULL
+                                              )
+                               ,hidden(verbatimTextOutput("message2"))
+                               , div(myActionButton("back_to_ws",label="<--back"),style="display:inline-block;")
+                               ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace"),style="display:inline-block;"))
+                               ,id = "grp_select_tab"
+                              )
+                           )
                   
-                  , hidden(div(div(myActionButton("parseGroup",label = "Parse Workspace")
-                                   ,style="display:inline-block;")
-                               ,div(uiOutput("workspaceGroups"),style="display:inline-block")
-                               ,div(textOutput("nsamples"),style="display:inline-block")
-                               ,style='width:90%',id="parseUI"
-                  ))
-                  
-            
+
             ),
     tabItem("Load",
             box(
