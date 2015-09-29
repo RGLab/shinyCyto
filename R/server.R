@@ -47,14 +47,16 @@ function(input, output,session){
   MAX_MB_UPLOAD = 1024 # one Gb limit.
   options(shiny.maxRequestSize=MAX_MB_UPLOAD*1024^2)
  
-#   .getFilePaths = reactive({
-#   s = input$chooser_rows_selected
-#   if(length(s)){
-#     df = input$filechooser
-#     setDT(df)
-#     df[name%in%s,datapath]
-#   }
-#   })
+  #---init gs menu ---
+  output$gs_menu_obj <- renderMenu(menuItem("GatingSets", tabName = "gs_menu", icon = icon("database"), badgeLabel = "0", badgeColor = "orange"))
+  #   .getFilePaths = reactive({
+  #   s = input$chooser_rows_selected
+  #   if(length(s)){
+  #     df = input$filechooser
+  #     setDT(df)
+  #     df[name%in%s,datapath]
+  #   }
+  #   })
   # select ws folder
   shinyDirChoose(input, "ws_dir_btn", session = session, roots = roots)
   
@@ -64,12 +66,6 @@ function(input, output,session){
   })
   
   rv = reactiveValues()
-  observeEvent(rv$gs,{
-    output$tree = renderDiagonalNetwork({
-      tree = getPopStats(rv$gs[1],format="long",showHidden=TRUE)[,.(Parent,Population)]
-      diagonalNetwork(maketreelist(data.frame(tree),root="root"),fontSize=8,margin = c(100,100))
-    })
-  })
   
   observeEvent(input$tabset,{
     js$fire()
@@ -166,18 +162,60 @@ function(input, output,session){
   
   observeEvent(input$parse_ws,{
     shinyjs::show("message2")
-    rv$gs <<-try(parseWorkspace(rv$ws,name = input$grp_selected))
-    gs <- rv$gs
+    gs <- try(parseWorkspace(rv$ws,name = input$grp_selected))
+    
     if(inherits(gs,"try-error")){
       output$message2 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
     }else if(class(gs)=="GatingSet"){
       output$message2 = renderText(paste0("Success!\n",capture.output(print(gs))))
+      rv$gs <<- gs
+      shinyjs::disable("parse_ws")
     }else{
       output$message2 = renderText("gs is a ",class(gs))
     }
   })
   
-  # select gs folder
+  #---- update gs panels ----
+  observeEvent(rv$gs,{
+      #update badge of gs menu
+      output$gs_menu_obj <- renderMenu(menuItem("GatingSets"
+                                                , tabName = "gs_menu"
+                                                , icon = icon("database")
+                                                , badgeLabel = "1"
+                                                , badgeColor = "green")
+                                      )
+      #update the pData tbl
+      output$pd_tbl <- DT::renderDataTable(pData(rv$gs))  
+      
+      #---- Populate sn selector ----    
+      updateSelectInput(session, "sn_select"
+                    , choices = sampleNames(rv$gs)
+                    , label = NULL)
+      
+  })
+  
+  #---update gh related panels---
+  observeEvent(input$sn_select,{
+    sn <- input$sn_select
+    
+    if(nchar(sn) > 0){
+      gh <- rv$gs[[sn]]
+      # gate
+      output$gate_layout <- renderPlot(plotGate(gh))
+      
+      #pop stats
+      stats <- getPopStats(gh)
+      output$pop_stats_tbl <- DT::renderDataTable(stats)
+      # tree
+      
+      output$tree = renderDiagonalNetwork({
+        tree = getPopStats(rv$gs[sn],format="long",showHidden=TRUE)[,.(Parent,Population)]
+        diagonalNetwork(maketreelist(data.frame(tree),root="root"),fontSize=8,margin = c(100,100))
+      })  
+    }
+    
+  })
+  #---- select gs folder ----
   shinyDirChoose(input, "gs_dir_btn", session = session, roots = roots)
   observeEvent(input$gs_dir_btn, {
     
@@ -231,6 +269,8 @@ function(input, output,session){
   observeEvent(input$selnode,{
     output$gateplot = renderImage(plt(),deleteFile = FALSE)
   })
+  
+  
   }
 
 
