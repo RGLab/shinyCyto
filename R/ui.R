@@ -50,13 +50,22 @@ body <- dashboardBody(
                        
                     
                         
-                  , hidden(div(selectInput("grp_selected"
-                                              , choices = ''
-                                              , label = NULL
-                                              )
+                  , hidden(div(selectInput("grp_selected", choices = '', label = "Group")
+                               
+                              , hidden(div(id = "kw_block"
+                                        , selectInput("kw_selected", choices = '', label = "keyword", multiple = TRUE)
+                                        , radioButtons("kw_src", choices = c("XML", "FCS"), inline = TRUE, label = "keyword source")
+                                            )
+                                        )
+                              , checkboxInput("isLeafBool", label = "Parse leaf boolean gates", value = FALSE)
                                ,hidden(verbatimTextOutput("message2"))
-                               , div(myActionButton("back_to_ws",label="<--back"),style="display:inline-block;")
-                               ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace"),style="display:inline-block;"))
+                               , div(myActionButton("back_to_ws",label="<--back")
+                                     ,style="display:inline-block;"
+                                     )
+                               ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace")
+                                             ,style="display:inline-block;"
+                                             )
+                                         )
                                ,id = "grp_select_tab"
                               )
                            )

@@ -86,7 +86,9 @@ function(input, output,session){
   
   #-------- fill the DT with file info --------
   output$file_table = DT::renderDataTable(ws_list(),rownames = FALSE
-                                          , selection = list(mode = "multiple", selected = 2)
+                                          , selection = list(mode = "single"#"multiple"
+                                                             , selected = 2)
+                                          , 
                                           )
   
   #-------- update the message and button based on the file info--------  
@@ -119,7 +121,8 @@ function(input, output,session){
   })
 
   #-------- populate the group selectInput with the selected ws--------
-  observeEvent(input$open_ws,{
+  observeEvent(input$open_ws, {
+  # observe({ #skip action button open_ws for debugging purpose
       if (ws_selected_count() == 1) {
         
           rv$ws <<- openWorkspace(ws_list()[ws_selected(), data])
@@ -137,8 +140,10 @@ function(input, output,session){
           groups<-levels(sg$groupName)
           updateSelectInput(session, "grp_selected"
                             , choices = c(`select a group ---` = '', groups)
-                            , label = NULL
+                            # , label = NULL
                             )
+          
+          
           shinyjs::disable("parse_ws")
           shinyjs::show("grp_select_tab")
           shinyjs::hide("ws_select_tab")
@@ -148,6 +153,29 @@ function(input, output,session){
       }
   })
   
+  observeEvent(input$grp_selected, {
+    
+    if(input$grp_selected!=''){
+      shinyjs::show("kw_block")
+      #populate the keyword selector
+      # if(input$kw_src == "XML"){ #TODO: support querying FCS header 
+        g <- getSampleGroups(rv$ws)
+        sid <- subset(g, groupName == input$grp_selected)[["sampleID"]][1]
+        kw <- getKeywords(rv$ws, sid)
+        # browser()
+        kw_name <- names(kw)
+        #filter out the useless kw
+        kw_name <- kw_name[!grepl('(\\$)|(LASER)|(^P[1-9]{1,2})|(^FJ_)|(FCS)|FSC ASF|(CYTOMETER)|COMPENSATION|WINDOW|THRESHOLD|(CST )|SPILL|EXPORT |CREATOR|AUTOBS', kw_name)]
+        pre_selected <- kw_name[grepl('EXPERIMENT NAME|Stim|Sample Order|PATIENT|ASSAY_ID|PTID|VISITNO|rx_code', kw_name, ignore.case = TRUE)]
+      # }
+      updateSelectInput(session, "kw_selected"
+                        , choices = kw_name
+                        , selected = pre_selected
+      )
+      shinyjs::enable("parse_ws")  
+    }
+    
+  })
   observeEvent(input$back_to_ws, {
     shinyjs::disable("parse_ws")
     shinyjs::hide("grp_select_tab")
@@ -155,14 +183,17 @@ function(input, output,session){
     
   })
   
-  observeEvent(input$grp_selected, {
-    
-    shinyjs::enable("parse_ws")
-  })
+  
   
   observeEvent(input$parse_ws,{
     shinyjs::show("message2")
-    gs <- try(parseWorkspace(rv$ws,name = input$grp_selected))
+    gs <- try(parseWorkspace(rv$ws
+                             ,name = input$grp_selected
+                             , keywords =  input$kw_selected
+                             , keywords.source = input$kw_src
+                             , leaf.bool = input$isLeafBool
+                             )
+              )
     
     if(inherits(gs,"try-error")){
       output$message2 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
