@@ -3,11 +3,30 @@ library(shinydashboard)
 library(DT)
 library(shinyFiles)
 library(networkD3)
+helpPopup <- function(title, content,
+                      placement=c('right', 'top', 'left', 'bottom'),
+                      trigger=c('click', 'hover', 'focus', 'manual')) {
+  tagList(
+    singleton(
+      tags$head(
+        tags$script("$(function() { $(\"[data-toggle='popover']\").popover(); })")
+      )
+    ),
+    tags$a(
+      href = "#", class = "btn btn-mini", `data-toggle` = "popover",
+      title = title, `data-content` = content, `data-animation` = TRUE,
+      `data-placement` = match.arg(placement, several.ok=TRUE)[1],
+      `data-trigger` = match.arg(trigger, several.ok=TRUE)[1],
+      
+      "?"
+    )
+  )
+}
 
 sidebar <- dashboardSidebar(
-  useShinyjs(),
-  extendShinyjs(script = "www/actions.js"),
-  sidebarMenu(
+   useShinyjs()
+  , extendShinyjs(script = "www/actions.js")
+  , sidebarMenu(
     
     menuItem("Import workspaces", tabName = "Import", icon = icon("arrow-right"), selected = TRUE)
     , menuItem("Load GatingSets", tabName = "load_menu", icon = icon("folder-open"))
@@ -30,9 +49,12 @@ myActionButton <- function (inputId, label, icon = NULL, ...)
 datadirectory = system.file("extdata",package = "flowWorkspaceData")#"~/rglab/workspace/analysis/sony1"
 
 body <- dashboardBody(
+   tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "helptip.css")
+  ),
   tabItems(
     # tabItem("Data", title = "Data", h1("Please choose submenu: 'Import workspaces' or 'Load GatingSet'"))
-    tabItem("Import", title = "Import"
+    tabItem("Import" 
                        
                   , div(
                       div(textInput("path_import",label = "workspaces path", value = datadirectory), style="display:inline-block")
@@ -53,19 +75,43 @@ body <- dashboardBody(
                   , hidden(div(selectInput("grp_selected", choices = '', label = "Group")
                                
                               , hidden(div(id = "kw_block"
-                                        , selectInput("kw_selected", choices = '', label = "keyword", multiple = TRUE)
-                                        , radioButtons("kw_src", choices = c("XML", "FCS"), inline = TRUE, label = "keyword source")
-                                            )
+                                          , div(selectInput("kw_selected", choices = '', label = "keyword", multiple = TRUE)
+                                                ,style="display:inline-block;"
+                                                )
+                                          , helpPopup(title = "keywords can be extracted from either XML workspaces or FCS files and attached to the phenoData of resulting GatingSets"
+                                                     , content = ""
+                                                     , trigger = "hover"
+                                                    )
+                                          
+                                          , radioButtons("kw_src", choices = c("XML", "FCS"), inline = TRUE, label = "keyword source")
+                                          )
                                         )
-                              , checkboxInput("isLeafBool", label = "Parse leaf boolean gates", value = FALSE)
+                              , div(style="display:inline-block;"
+                                    , checkboxInput("isLeafBool", label = "Leaf boolean gates", value = FALSE)
+                                    )
+                              , helpPopup(title = "Skipping the leaf/terminal boolean nodes can speed up the parsing significantly (especially for ICS gating scheme that typically contains lots of polyfunctional boolean gates, 
+                                          which can be computed through COMPASS package.
+                                          Also if user does want them back later, simply call 'recompute()' method to calculate them without re-parsing the entire workspace."
+                                          , content = ""
+                                          , trigger = "hover"
+                                          )
                                ,hidden(verbatimTextOutput("message2"))
-                               , div(myActionButton("back_to_ws",label="<--back")
-                                     ,style="display:inline-block;"
-                                     )
-                               ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace")
-                                             ,style="display:inline-block;"
-                                             )
+                              
+#                               , a(id = "toggleAdvanced", "advanced info>>"),
+#                                   hidden(
+#                                     div(id = "advanced"
+#                                         ,textInput("company", "Company", "")
+#                                     )
+#                                   )
+                              , div(
+                                    div(myActionButton("back_to_ws",label="<--back")
+                                         ,style="display:inline-block;"
                                          )
+                                   ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace")
+                                                 ,style="display:inline-block;"
+                                                 )
+                                             )
+                                  )
                                ,id = "grp_select_tab"
                               )
                            )
@@ -116,8 +162,9 @@ body <- dashboardBody(
 )
 
 dashboardPage(
-  dashboardHeader(title = "OpenCyto"),
-  sidebar,
-  body          
+  
+  dashboardHeader(title = "OpenCyto")
+  ,sidebar
+  , body          
   
 )

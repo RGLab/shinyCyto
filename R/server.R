@@ -121,8 +121,8 @@ function(input, output,session){
   })
 
   #-------- populate the group selectInput with the selected ws--------
-  observeEvent(input$open_ws, {
-  # observe({ #skip action button open_ws for debugging purpose
+  # observeEvent(input$open_ws, {
+  observe({ #skip action button open_ws for debugging purpose
       if (ws_selected_count() == 1) {
         
           rv$ws <<- openWorkspace(ws_list()[ws_selected(), data])
@@ -140,7 +140,7 @@ function(input, output,session){
           groups<-levels(sg$groupName)
           updateSelectInput(session, "grp_selected"
                             , choices = c(`select a group ---` = '', groups)
-                            # , label = NULL
+                            , selected = "T-cell"# preselect for debugging purpose
                             )
           
           
@@ -152,6 +152,8 @@ function(input, output,session){
           
       }
   })
+  
+  
   
   observeEvent(input$grp_selected, {
     
