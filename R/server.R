@@ -162,8 +162,14 @@ function(input, output,session){
       #populate the keyword selector
       # if(input$kw_src == "XML"){ #TODO: support querying FCS header 
         g <- getSampleGroups(rv$ws)
-        sid <- subset(g, groupName == input$grp_selected)[["sampleID"]][1]
-        kw <- getKeywords(rv$ws, sid)
+        samples <- getSamples(rv$ws)
+        
+        sg <<- subset(g, groupName == input$grp_selected)
+        sid <- sg[["sampleID"]]
+        kw <- getKeywords(rv$ws, sid[1])
+        samplenames <- subset(samples, sampleID %in% sid)[["name"]]
+        
+        rv$samplenames <<- samplenames
         # browser()
         kw_name <- names(kw)
         #filter out the useless kw
@@ -174,10 +180,43 @@ function(input, output,session){
                         , choices = kw_name
                         , selected = pre_selected
       )
+      
+      
+      updateSelectInput(session, "sub_sn"
+                        ,  choices = rv$samplenames
+                        , selected = rv$samplenames[1]
+                        )
+      
+      output$sub_pd <- renderUI(lapply(1:length(input$kw_selected), function(i){
+                                    thisKw <- input$kw_selected[i]        
+                                    textInput(paste0("sub_pd_", i), label = thisKw)
+            
+                                  })
+                              )
       shinyjs::enable("parse_ws")  
     }
     
   })
+  
+  observeEvent(input$subset_type,{
+  if(input$subset_type == "numeric index"){
+    shinyjs::show("sub_ind")  
+    shinyjs::hide("sub_sn")  
+    shinyjs::hide("sub_pd")  
+  }else if(input$subset_type == "sample names"){
+    shinyjs::show("sub_sn")  
+    shinyjs::hide("sub_ind")  
+    shinyjs::hide("sub_pd")  
+  }else{
+    shinyjs::show("sub_pd")  
+    shinyjs::hide("sub_sn")  
+    shinyjs::hide("sub_ind")  
+  }
+  })
+  onclick("toggleAdvanced", {
+    toggle(id = "advanced", anim = TRUE) 
+  })
+  
   observeEvent(input$back_to_ws, {
     shinyjs::disable("parse_ws")
     shinyjs::hide("grp_select_tab")
@@ -189,16 +228,28 @@ function(input, output,session){
   
   observeEvent(input$parse_ws,{
     shinyjs::show("message2")
-    gs <- try(parseWorkspace(rv$ws
-                             ,name = input$grp_selected
-                             , keywords =  input$kw_selected
-                             , keywords.source = input$kw_src
-                             , leaf.bool = input$isLeafBool
-                             )
-              )
-    
+    browser()
+    gs <- try(eval(thisCall))
+      thisCall <- substitute(parseWorkspace(rv$ws
+                                           ,name = input$grp_selected
+                                           , keywords =  input$kw_selected
+                                           , keywords.source = input$kw_src
+                                           , leaf.bool = input$isLeafBool
+                                           )
+                              )
+      
+      
+      if(input$subset_type == "numeric index"){
+        thisSubset <- input$sub_ind
+        thisSubset <- eval(as.list(parse(text = thisSubset))[[1]])
+        thisSubset <- as.numeric(thisSubset)
+      }else if(input$subset_type == "sample names"){
+        thisSubset <- strsplit("")
+      }
+        
+      thisCall[["subset"]] <- thisSubset
     if(inherits(gs,"try-error")){
-      output$message2 = renderText(paste(geterrmessage(),"\nMaybe you need to upload FCS files as well?"))
+      output$message2 = renderText(paste(geterrmessage()))#,"\nMaybe you need to upload FCS files as well?"))
     }else if(class(gs)=="GatingSet"){
       output$message2 = renderText(paste0("Success!\n",capture.output(print(gs))))
       rv$gs <<- gs

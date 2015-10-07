@@ -95,14 +95,44 @@ body <- dashboardBody(
                                           , content = ""
                                           , trigger = "hover"
                                           )
-                               ,hidden(verbatimTextOutput("message2"))
+                               
                               
-#                               , a(id = "toggleAdvanced", "advanced info>>"),
-#                                   hidden(
-#                                     div(id = "advanced"
-#                                         ,textInput("company", "Company", "")
-#                                     )
-#                                   )
+                              , div(a(id = "toggleAdvanced"
+                                      , "show/hide advanced settings"
+                                      , style = "cursor:pointer")
+                                    ),
+                                  # hidden(
+                                    div(id = "advanced", style = "display:inline-block;background-color:lightGray"
+                                        , div(radioButtons("subset_type"
+                                                           , label = "Filter:"
+                                                           , choices = c("numeric index", "sample names", "pData")
+                                                           , inline = T)
+                                              ,style="display:inline-block"
+                                              )
+                                        , div(
+                                              helpPopup(title = "specifying the subset of samples in a group to import.
+                                                            It can be a numeric index Or a character vector of the FCS filenames 
+                                                            Or an expression passed to 'subset' function to filter samples by 'pData' 
+                                                            (Note that the columns referred by the expression must also be explicitly specified in 'keywords' option)"
+                                                    , content = ""
+                                                    , trigger = "hover"
+                                                    )
+                                            ,style="display:inline-block"
+                                            )
+                                        , textInput("sub_ind", "", value = "1")
+                                        , hidden(selectInput("sub_sn", label = ""
+                                                             ,  choices = ""
+                                                             , multiple = TRUE
+                                        )
+                                        )
+                                        , hidden(
+                                          htmlOutput("sub_pd")
+                                        )
+                                    
+                                    
+                                    # )
+                                  )
+                              ,hidden(verbatimTextOutput("message2"))
                               , div(
                                     div(myActionButton("back_to_ws",label="<--back")
                                          ,style="display:inline-block;"
