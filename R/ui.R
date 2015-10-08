@@ -103,33 +103,14 @@ body <- dashboardBody(
                                     ),
                                   # hidden(
                                     div(id = "advanced", style = "display:inline-block;background-color:lightGray"
-                                        , div(radioButtons("subset_type"
-                                                           , label = "Filter:"
-                                                           , choices = c("numeric index", "sample names", "pData")
-                                                           , inline = T)
-                                              ,style="display:inline-block"
-                                              )
+                                        , dataTableOutput("sub_pd")
                                         , div(
-                                              helpPopup(title = "specifying the subset of samples in a group to import.
-                                                            It can be a numeric index Or a character vector of the FCS filenames 
-                                                            Or an expression passed to 'subset' function to filter samples by 'pData' 
-                                                            (Note that the columns referred by the expression must also be explicitly specified in 'keywords' option)"
+                                              helpPopup(title = "select samples to parse by using filtering boxes for each field"
                                                     , content = ""
                                                     , trigger = "hover"
                                                     )
                                             ,style="display:inline-block"
                                             )
-                                        , textInput("sub_ind", "", value = "1")
-                                        , hidden(selectInput("sub_sn", label = ""
-                                                             ,  choices = ""
-                                                             , multiple = TRUE
-                                        )
-                                        )
-                                        , hidden(
-                                          htmlOutput("sub_pd")
-                                        )
-                                    
-                                    
                                     # )
                                   )
                               ,hidden(verbatimTextOutput("message2"))

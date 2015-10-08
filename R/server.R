@@ -1,4 +1,5 @@
 library(shiny)
+if (packageVersion('flowWorkspace') < '3.15.19') devtools::install_github('RGLab/flowWorkspace')
 library(flowWorkspace)
 library(openCyto)
 library(shinyjs)
@@ -163,14 +164,12 @@ function(input, output,session){
       # if(input$kw_src == "XML"){ #TODO: support querying FCS header 
         g <- getSampleGroups(rv$ws)
         samples <- getSamples(rv$ws)
-        
-        sg <<- subset(g, groupName == input$grp_selected)
-        sid <- sg[["sampleID"]]
+        sg <- merge(samples, g, by="sampleID")
+        sg <- sg[sg$pop.counts>0,]
+        rv$sg <<- subset(sg, groupName == input$grp_selected)
+
+        sid <- rv$sg[["sampleID"]]
         kw <- getKeywords(rv$ws, sid[1])
-        samplenames <- subset(samples, sampleID %in% sid)[["name"]]
-        
-        rv$samplenames <<- samplenames
-        # browser()
         kw_name <- names(kw)
         #filter out the useless kw
         kw_name <- kw_name[!grepl('(\\$)|(LASER)|(^P[1-9]{1,2})|(^FJ_)|(FCS)|FSC ASF|(CYTOMETER)|COMPENSATION|WINDOW|THRESHOLD|(CST )|SPILL|EXPORT |CREATOR|AUTOBS', kw_name)]
@@ -180,39 +179,44 @@ function(input, output,session){
                         , choices = kw_name
                         , selected = pre_selected
       )
-      
-      
-      updateSelectInput(session, "sub_sn"
-                        ,  choices = rv$samplenames
-                        , selected = rv$samplenames[1]
-                        )
-      
-      output$sub_pd <- renderUI(lapply(1:length(input$kw_selected), function(i){
-                                    thisKw <- input$kw_selected[i]        
-                                    textInput(paste0("sub_pd_", i), label = thisKw)
-            
-                                  })
-                              )
+
       shinyjs::enable("parse_ws")  
     }
     
   })
   
-  observeEvent(input$subset_type,{
-  if(input$subset_type == "numeric index"){
-    shinyjs::show("sub_ind")  
-    shinyjs::hide("sub_sn")  
-    shinyjs::hide("sub_pd")  
-  }else if(input$subset_type == "sample names"){
-    shinyjs::show("sub_sn")  
-    shinyjs::hide("sub_ind")  
-    shinyjs::hide("sub_pd")  
-  }else{
-    shinyjs::show("sub_pd")  
-    shinyjs::hide("sub_sn")  
-    shinyjs::hide("sub_ind")  
-  }
+  observeEvent(input$kw_selected, {
+    if(input$kw_selected!=""){
+      # browser()
+      pd <- suppressWarnings(suppressMessages(
+                                          flowWorkspace:::.parse.pData(rv$ws, input$kw_selected
+                                                                       , rv$sg, input$kw_src
+                                                                       , execute = TRUE
+                                                                       , additional.keys = "$TOT"
+                                                                       , path = rv$ws@path
+                                                                       , keyword.ignore.case = FALSE
+                                                                       , subset = NULL)
+                                  )
+                            )
+      
+      pd[["guid"]] <- NULL
+      #remove temporary columns
+      pd[["sampleID"]] <- NULL
+      pd[["nFound"]] <- NULL
+      pd[["file"]] <- NULL
+      class(pd) <- "data.frame"
+      output$sub_pd <- DT::renderDataTable(pd
+#                                           , options = list(
+#                                                           column.searchable = TRUE
+#                                                           )
+                                          , server = FALSE
+                                       )
+                              
+      
+    }
+    
   })
+  
   onclick("toggleAdvanced", {
     toggle(id = "advanced", anim = TRUE) 
   })
@@ -244,6 +248,8 @@ function(input, output,session){
         thisSubset <- eval(as.list(parse(text = thisSubset))[[1]])
         thisSubset <- as.numeric(thisSubset)
       }else if(input$subset_type == "sample names"){
+        thisSubset <- input$sub_sn
+        browser()
         thisSubset <- strsplit("")
       }
         
