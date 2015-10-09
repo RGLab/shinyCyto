@@ -205,12 +205,16 @@ function(input, output,session){
       pd[["nFound"]] <- NULL
       pd[["file"]] <- NULL
       class(pd) <- "data.frame"
-      output$sub_pd <- DT::renderDataTable(pd
-#                                           , options = list(
-#                                                           column.searchable = TRUE
-#                                                           )
-                                          , server = FALSE
-                                       )
+      rv$pd_filtered <<- pd
+      output$sub_pd <- DT::renderDataTable(datatable(pd, filter = "bottom"
+                                                     , options = list(
+                                                                      search = list(regex = TRUE)
+                                                                      , autoWidth = TRUE
+                                                                      )
+                                                     , rownames = FALSE
+                                                     , selection = "none"
+                                                      )
+                                            )
                               
       
     }
@@ -232,28 +236,22 @@ function(input, output,session){
   
   observeEvent(input$parse_ws,{
     shinyjs::show("message2")
-    browser()
+    
+    sub_Ind <- input$sub_pd_rows_all
+    sn <- rv$pd_filtered[sub_Ind, "name"]
+    thisCall <- substitute(parseWorkspace(rv$ws
+                                          ,name = input$grp_selected
+                                          , keywords =  input$kw_selected
+                                          , keywords.source = input$kw_src
+                                          , leaf.bool = input$isLeafBool
+                                          , subset = sn
+                                        )
+                          )
+    
     gs <- try(eval(thisCall))
-      thisCall <- substitute(parseWorkspace(rv$ws
-                                           ,name = input$grp_selected
-                                           , keywords =  input$kw_selected
-                                           , keywords.source = input$kw_src
-                                           , leaf.bool = input$isLeafBool
-                                           )
-                              )
       
       
-      if(input$subset_type == "numeric index"){
-        thisSubset <- input$sub_ind
-        thisSubset <- eval(as.list(parse(text = thisSubset))[[1]])
-        thisSubset <- as.numeric(thisSubset)
-      }else if(input$subset_type == "sample names"){
-        thisSubset <- input$sub_sn
-        browser()
-        thisSubset <- strsplit("")
-      }
-        
-      thisCall[["subset"]] <- thisSubset
+      
     if(inherits(gs,"try-error")){
       output$message2 = renderText(paste(geterrmessage()))#,"\nMaybe you need to upload FCS files as well?"))
     }else if(class(gs)=="GatingSet"){
@@ -274,19 +272,32 @@ function(input, output,session){
                                                 , badgeLabel = "1"
                                                 , badgeColor = "green")
                                       )
+      
       #update the pData tbl
-      output$pd_tbl <- DT::renderDataTable(pData(rv$gs))  
+      output$pd_tbl <- DT::renderDataTable(datatable(pData(rv$gs)
+                                                     , rownames = FALSE
+                                                     ,selection = list(mode = "single", selected = 1)
+                                                     , filter = "bottom"
+                                                     , options = list(search = list(regex = TRUE)
+                                                                       , autoWidth = TRUE
+#                                                                       , dom = 'T<"clear">lfrtip'
+#                                                                       , tableTools = list(sSwfPath = copySWF())
+                                                                     )
+                                                     # , extensions = list("ColVis", "TableTools")#they are retired by Buttons extension, which is yet to be supported by DT package
+                                                     )
+                                           , server = FALSE
+                                           )  
       
       #---- Populate sn selector ----    
-      updateSelectInput(session, "sn_select"
-                    , choices = sampleNames(rv$gs)
-                    , label = NULL)
+#       updateSelectInput(session, "sn_select"
+#                     , choices = sampleNames(rv$gs)
+#                     , label = NULL)
       
   })
   
   #---update gh related panels---
-  observeEvent(input$sn_select,{
-    sn <- input$sn_select
+  observeEvent(input$pd_tbl_rows_selected,{
+    sn <- rownames(pData(rv$gs)[input$pd_tbl_rows_selected, ,drop = FALSE])
     
     if(nchar(sn) > 0){
       gh <- rv$gs[[sn]]
@@ -316,7 +327,7 @@ function(input, output,session){
   
   observeEvent(input$load,{
     output$message = renderPrint(cat("Choose a dataset"))
-    
+  
     s = input$path_gs
     if(is.null(s)){
       output$message = renderPrint(cat("Choose a some files above"))

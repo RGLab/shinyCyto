@@ -33,8 +33,8 @@ sidebar <- dashboardSidebar(
     , menuItemOutput("gs_menu_obj")
 
     
-    , menuItem("Compensate & Transform", tabName = "Compensate", icon = icon("exchange"))
-    , menuItem("Build a Gating Template",tabName = "GatingTemplate", icon = icon("table"))
+#     , menuItem("Compensate & Transform", tabName = "Compensate", icon = icon("exchange"))
+#     , menuItem("Build a Gating Template",tabName = "GatingTemplate", icon = icon("table"))
     
   )
 )
@@ -86,15 +86,7 @@ body <- dashboardBody(
                                           , radioButtons("kw_src", choices = c("XML", "FCS"), inline = TRUE, label = "keyword source")
                                           )
                                         )
-                              , div(style="display:inline-block;"
-                                    , checkboxInput("isLeafBool", label = "Leaf boolean gates", value = FALSE)
-                                    )
-                              , helpPopup(title = "Skipping the leaf/terminal boolean nodes can speed up the parsing significantly (especially for ICS gating scheme that typically contains lots of polyfunctional boolean gates, 
-                                          which can be computed through COMPASS package.
-                                          Also if user does want them back later, simply call 'recompute()' method to calculate them without re-parsing the entire workspace."
-                                          , content = ""
-                                          , trigger = "hover"
-                                          )
+                             
                                
                               
                               , div(a(id = "toggleAdvanced"
@@ -102,15 +94,31 @@ body <- dashboardBody(
                                       , style = "cursor:pointer")
                                     ),
                                   # hidden(
-                                    div(id = "advanced", style = "display:inline-block;background-color:lightGray"
-                                        , dataTableOutput("sub_pd")
+                                    div(id = "advanced"
+                                        , style = "display:inline-block"
+                                        #leaf node option
                                         , div(
-                                              helpPopup(title = "select samples to parse by using filtering boxes for each field"
-                                                    , content = ""
-                                                    , trigger = "hover"
-                                                    )
-                                            ,style="display:inline-block"
+                                             div(style="display:inline-block;"
+                                                  , checkboxInput("isLeafBool", label = "Leaf boolean gates", value = FALSE)
+                                                  )
+                                              , helpPopup(title = "Skipping the leaf/terminal boolean nodes can speed up the parsing significantly (especially for ICS gating scheme that typically contains lots of polyfunctional boolean gates, 
+                                                                    which can be computed through COMPASS package.
+                                                                    Also if user does want them back later, simply call 'recompute()' method to calculate them without re-parsing the entire workspace."
+                                                          , content = ""
+                                                          , trigger = "hover"
+                                                          )
                                             )
+                                        #subset option
+                                        , div(
+                                              span("Filter samples by pData:")
+                                        
+                                              , helpPopup(title = "select samples to parse by typing the keyword in each filtering boxes under each field"
+                                                          , content = ""
+                                                          , trigger = "hover"
+                                                          )
+                                              , dataTableOutput("sub_pd")    
+                                            )
+                                        
                                     # )
                                   )
                               ,hidden(verbatimTextOutput("message2"))
@@ -140,26 +148,29 @@ body <- dashboardBody(
     
     , tabItem("gs_menu" 
                
-              , tabBox(id = "gs_tab", width = NULL
-                     ,tabPanel(title = "Pheno Data", value = "pd_tab", icon = icon("th")
+#               ,  tabBox(id = "gs_tab", width = NULL
+#                      ,tabPanel(title = "Pheno Data", value = "pd_tab", icon = icon("th")
                                ,DT::dataTableOutput("pd_tbl")
-                               )
-                     ,tabPanel(title = "Gating Tree", value = "tree_tab", icon = icon("sitemap")
-                               ,selectInput("sn_select", choices = c("select one sample ---" = ""), label = NULL)
-                               # ,checkboxInput("isBool", "Show boolean gates")
-                               ,div(div(diagonalNetworkOutput("tree",width="400px",height="300px"),
-                                       style="display:inline-block;float:left;")
-                                   ,div(imageOutput("gateplot",width = "300px",height="300px")
-                                        ,style="margin-left:400px;", id = "tabSet")
-                                   ,style="width:100%;height:100%;"
-                               )
-                               )
-                     ,tabPanel(title = "Gating Layout", value = "gate_layout_tab", icon = icon("picture-o")
-                               , plotOutput("gate_layout"))
-                     ,tabPanel(title = "Pop Stats", value = "stats_tab", icon = icon("bar-chart")
-                               ,DT::dataTableOutput("pop_stats_tbl")
-                               )
-                     )
+                               
+                              , tabBox(id = "gh_tab", width = NULL
+                                     ,tabPanel(title = "Gating Tree", value = "tree_tab", icon = icon("sitemap")
+                                               # ,selectInput("sn_select", choices = c("select one sample ---" = ""), label = NULL)
+                                               # ,checkboxInput("isBool", "Show boolean gates")
+                                               ,div(div(diagonalNetworkOutput("tree",width="400px",height="300px"),
+                                                       style="display:inline-block;float:left;")
+                                                   ,div(imageOutput("gateplot",width = "300px",height="300px")
+                                                        ,style="margin-left:400px;", id = "tabSet")
+                                                   ,style="width:100%;height:100%;"
+                                               )
+                                               )
+                                     ,tabPanel(title = "Gating Layout", value = "gate_layout_tab", icon = icon("picture-o")
+                                               , plotOutput("gate_layout"))
+                                     ,tabPanel(title = "Pop Stats", value = "stats_tab", icon = icon("bar-chart")
+                                               ,DT::dataTableOutput("pop_stats_tbl")
+                                               )
+                                    )
+#                           )
+#                      )
               )
     
     , tabItem("Compensate", 
