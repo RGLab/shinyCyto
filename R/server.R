@@ -89,7 +89,7 @@ function(input, output,session){
   output$file_table = DT::renderDataTable(ws_list(),rownames = FALSE
                                           , selection = list(mode = "single"#"multiple"
                                                              , selected = 2)
-                                          , 
+                                          
                                           )
   
   #-------- update the message and button based on the file info--------  
@@ -302,7 +302,7 @@ function(input, output,session){
     if(nchar(sn) > 0){
       gh <- rv$gs[[sn]]
       # gate
-      output$gate_layout <- renderPlot(plotGate(gh))
+      output$gate_layout <- renderPlot(autoplot(gh))
       
       #pop stats
       stats <- getPopStats(gh)
@@ -324,8 +324,8 @@ function(input, output,session){
     updateTextInput(session,'path_gs', value = path_selected)
   })
   
-  
-  observeEvent(input$load,{
+  rv$preload <- 1 ##preload for testing
+  observeEvent(input$load+rv$preload,{
     output$message = renderPrint(cat("Choose a dataset"))
   
     s = input$path_gs
@@ -352,6 +352,121 @@ function(input, output,session){
     }else{
       output$message = renderPrint(cat("Not a stored GatingSet or GatingSetList"))
     }
+  })
+  
+  ###init template tbl
+  rv$gt.tbl <- data.frame(alias = NA
+                      , pop = NA
+                      , parent = NA
+                      , dims = NA
+                      , gating_method = NA
+                      , gating_args = NA
+                      , collapseDataForGating = NA
+                      , groupBy = NA
+                      , preprocessing_method = NA
+                      , preprocessing_args = NA
+                    )
+  #update template table view
+  observeEvent(rv$gt.tbl,{
+                output$gt_tbl <- DT::renderDataTable(datatable(rv$gt.tbl
+                                                               , rownames = FALSE
+                                                               ,selection = list(mode = "single", selected = 1)
+                )
+                
+                , server = FALSE
+                )  
+  })
+  
+  ##init dims and nodes
+  observeEvent(rv$gs,
+               {
+                  rv$nodes <- getNodes(rv$gs)
+                 fr_pd <- pData(parameters(getData(rv$gs[[1]], use.exprs = FALSE)))
+                 marker <- fr_pd[["desc"]]
+                 marker[is.na(marker)] <- ""
+                 chnl <- fr_pd[["name"]] 
+                 
+                 updateSelectInput(session, "dims", choices = paste0(chnl, marker, sep = " "))
+               }
+  )
+  #update dims
+  observeEvent(rv$gs,
+               {
+                 rv$nodes <- getNodes(rv$gs)
+                 fr_pd <- pData(parameters(getData(rv$gs[[1]], use.exprs = FALSE)))
+                 marker <- fr_pd[["desc"]]
+                 marker[is.na(marker)] <- ""
+                 chnl <- fr_pd[["name"]] 
+                 
+                 updateSelectInput(session, "dims", choices = paste0(chnl, marker, sep = " "))
+               }
+  )
+  ##update parent input 
+  observeEvent(rv$nodes,
+               {
+                 updateSelectInput(session, "parent", choices = rv$nodes)
+               }
+  )
+  ##update data based on selected parent
+  observeEvent(input$parent,
+               {
+                 if(input$parent!="")
+                  rv$fs <- getData(rv$gs, input$parent)
+               })
+  
+  #plot to inspect the data before adding gating method
+  observeEvent(input$bt_plot_data, {
+      chnl <- input$dims
+      if(length(chnl) == 1)
+        p <- autoplot(rv$fs, x = chnl)
+      else
+        p <- autoplot(rv$fs, x = chnl[1], y = chnl[2])
+      output$gt_data_plot <- renderPlot(p)
+  })
+  
+  #plot and inspect the gate
+  observeEvent(input$bt_apply_gate, {
+    nodes <- getNodes(rv$gs)
+    #convert some field to be compaitle with template-parser 
+    groupBy <- input$groupBy
+    groupBy <- paste(groupBy, collapse = ":")
+    dims <- input$dims
+    if(dims!="")
+      dims <- paste(dims, collapse = ",")
+    #parse pop patterns
+    pop <- input$pop
+    pop.parsed <- ""
+    ind <- grepl("A", pop)
+    if(sum(ind) == 1)
+      pop.parsed <- pop[ind]
+    else if(sum(ind) == 2)
+      pop.parsed <- "A+/-"
+    
+    ind <- grepl("B", pop)
+    if(sum(ind) == 1)
+      pop.parsed <- paste0(pop.parsed, pop[ind])
+    else if(sum(ind) == 2)
+      pop.parsed <- paste0(pop.parsed, "B+/-")
+    #add gates to gs
+    new_row <- add_pop(rv$gs
+                         , alias = input$alias
+                         , pop = pop.parsed
+                         , parent = input$parent
+                         , dims = dims
+                         , gating_method = input$gating_method
+                         , gating_args = input$gating_args
+                         , groupBy = groupBy
+                         , collapseDataForGating = input$collapseData
+                         , preprocessing_method = input$pp_method
+                         , preprocessing_args = input$pp_args)
+    # add the row to template
+    rv$gt.tbl <- rbind(rv$gt.tbl, new_row)
+    #plot the new gates
+    rv$nodes <- getNodes(rv$gs)
+    new.nodes <- setdiff(rv$nodes, nodes)
+    
+    p <- autoplot(rv$gs, new.nodes)
+    output$gt_data_plot <- renderPlot(p)
   })
   plt = reactive({
         h = digest::digest(input$selnode)

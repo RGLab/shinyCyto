@@ -28,13 +28,13 @@ sidebar <- dashboardSidebar(
   , extendShinyjs(script = "www/actions.js")
   , sidebarMenu(
     
-    menuItem("Import workspaces", tabName = "Import", icon = icon("arrow-right"), selected = TRUE)
+    menuItem("Import workspaces", tabName = "Import", icon = icon("arrow-right"))
     , menuItem("Load GatingSets", tabName = "load_menu", icon = icon("folder-open"))
     , menuItemOutput("gs_menu_obj")
 
     
 #     , menuItem("Compensate & Transform", tabName = "Compensate", icon = icon("exchange"))
-#     , menuItem("Build a Gating Template",tabName = "GatingTemplate", icon = icon("table"))
+    , menuItem("Build a Gating Template",tabName = "GatingTemplate", icon = icon("table"), selected = TRUE)
     
   )
 )
@@ -139,7 +139,8 @@ body <- dashboardBody(
             )
     , tabItem("load_menu"
               , box(shinyDirButton("gs_dir_btn",label = "choose GatingSet ...", title = "Please select a folder", buttonType = "primary")
-                    , textInput("path_gs", label = "", value = file.path(datadirectory, "gs_manual"))
+                    , textInput("path_gs", label = "", value = "/loc/no-backup/mike/test_gs"#file.path(datadirectory, "gs_manual")
+                                )
                     , myActionButton(inputId = "load",label = "Load Data")
                     , div(verbatimTextOutput("message"),style='width:90%')
                     , title = "Load GatingSets", solidHeader = TRUE, status = "primary", width = NULL
@@ -176,9 +177,60 @@ body <- dashboardBody(
     , tabItem("Compensate", 
             box(title = "Compensate & Transform", solidHeader = TRUE, status = "primary")
             ),
-    tabItem("GatingTemplate",
-            box(title = "Build a Gating Template", solidHeader = TRUE, status = "primary")
-            )
+    tabItem("GatingTemplate"
+            ,DT::dataTableOutput("gt_tbl")
+            
+                     
+                               ,div(
+                                   div(textInput("alias", label="Population name", value='')
+                                      ,style="display:inline-block;float:left;") 
+                                  , div(selectInput("parent", choices="", label='Select Parent Population')
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(selectizeInput("dims", choices="", label='Channels', multiple =TRUE
+                                                , options = list(maxItems = 2)
+                                               )
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(selectInput("pop", choices=c("A+","A-","B+","B-"), label='Population pattern', multiple =TRUE)
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(selectInput("gating_method",
+                                              choices = as.list(gating_methods),
+                                              label="Gating Method",
+                                              selected = "mindensity"
+                                              )
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(textInput("gating_args", label="Gating Parameters", value='')
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(checkboxInput("collapseData", label = "collapse data for gating")
+                                          ,style="display:inline-block;float:left;") 
+                                  , div(selectInput("groupBy", label = "Group By", choices = "", multiple = TRUE)
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(selectInput("pp_method",
+                                                choices = c("---" = "", as.list(pp_methods)),
+                                                label = "Preprocessing Method"
+                                                , selected = ""
+                                                )
+                                        ,style="display:inline-block;float:left;") 
+                                  , div(textInput("pp_args", label="Preprocessing parameters", value='')
+                                                ,style="display:inline-block;float:left;")
+                                  ,style="display:inline-block")
+                               ,div(
+                                     
+                                    myActionButton("bt_plot_data",label="plot data")
+                                          
+                                    
+                                    , myActionButton("bt_apply_gate",label="add gate")
+                                    
+                                      
+                                   )
+                               , div(
+                                    plotOutput("gt_data_plot")
+                                    )
+                                    
+                                )
+                     
+            
+            
+            
     
   )
 )
