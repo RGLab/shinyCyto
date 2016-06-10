@@ -6,3 +6,4 @@ This shiny app provides the GUI for `openCyto`, featured by:
 * Visualize the gated data and stats
 * Interactively build gating template
                                    
+![demo](demo.gif)

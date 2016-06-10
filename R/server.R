@@ -426,7 +426,7 @@ function(input, output,session){
   
   #plot tree
   observeEvent(input$bt_plot_tree, {
-    if(length(getNodes(gs))>1)
+    if(length(getNodes(rv$gs))>1)
       output$gt_data_plot <- renderPlot(plot(rv$gs))
   })
   
