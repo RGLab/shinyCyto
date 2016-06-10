@@ -301,18 +301,22 @@ function(input, output,session){
     
     if(nchar(sn) > 0){
       gh <- rv$gs[[sn]]
-      # gate
-      output$gate_layout <- renderPlot(autoplot(gh))
-      
-      #pop stats
-      stats <- getPopStats(gh)
-      output$pop_stats_tbl <- DT::renderDataTable(stats)
-      # tree
-      
-      output$tree = renderDiagonalNetwork({
-        tree = getPopStats(rv$gs[sn],format="long",showHidden=TRUE)[,.(Parent,Population)]
-        diagonalNetwork(maketreelist(data.frame(tree),root="root"),fontSize=8,margin = c(100,100))
-      })  
+      nPop <- length(getNodes(gh))
+      if(nPop > 1){
+        output$gate_layout <- renderPlot(autoplot(gh))
+        
+        #pop stats
+        stats <- getPopStats(gh)
+        output$pop_stats_tbl <- DT::renderDataTable(stats)
+        # tree
+        
+        output$tree = renderDiagonalNetwork({
+          tree = getPopStats(rv$gs[sn],format="long",showHidden=TRUE)[,.(Parent,Population)]
+          treeList <- maketreelist(data.frame(tree),root="root")
+          diagonalNetwork(treeList,fontSize=8)
+        })
+      }
+          
     }
     
   })
@@ -386,21 +390,11 @@ function(input, output,session){
                  marker[is.na(marker)] <- ""
                  chnl <- fr_pd[["name"]] 
                  
-                 updateSelectInput(session, "dims", choices = paste0(chnl, marker, sep = " "))
+                 names(chnl) <- paste(chnl, marker, sep = " ")
+                 updateSelectInput(session, "dims", choices = chnl)
                }
   )
-  #update dims
-  observeEvent(rv$gs,
-               {
-                 rv$nodes <- getNodes(rv$gs)
-                 fr_pd <- pData(parameters(getData(rv$gs[[1]], use.exprs = FALSE)))
-                 marker <- fr_pd[["desc"]]
-                 marker[is.na(marker)] <- ""
-                 chnl <- fr_pd[["name"]] 
-                 
-                 updateSelectInput(session, "dims", choices = paste0(chnl, marker, sep = " "))
-               }
-  )
+
   ##update parent input 
   observeEvent(rv$nodes,
                {
@@ -416,57 +410,89 @@ function(input, output,session){
   
   #plot to inspect the data before adding gating method
   observeEvent(input$bt_plot_data, {
-      chnl <- input$dims
-      if(length(chnl) == 1)
-        p <- autoplot(rv$fs, x = chnl)
-      else
-        p <- autoplot(rv$fs, x = chnl[1], y = chnl[2])
-      output$gt_data_plot <- renderPlot(p)
+      
+      
+      output$gt_data_plot <- renderPlot({
+                                  
+                                    chnl <- input$dims
+                                    
+                                    mylimit <- ggcyto_par_set(limits = "instrument")
+                                    if(length(chnl) == 1)
+                                      autoplot(rv$fs[1], x = chnl) + mylimit
+                                    else if(length(chnl) == 2)
+                                      autoplot(rv$fs[1], x = chnl[1], y = chnl[2]) + mylimit
+                                  })
   })
   
-  #plot and inspect the gate
+  #plot tree
+  observeEvent(input$bt_plot_tree, {
+    if(length(getNodes(gs))>1)
+      output$gt_data_plot <- renderPlot(plot(rv$gs))
+  })
+  
+  #add and plot the gate
   observeEvent(input$bt_apply_gate, {
     nodes <- getNodes(rv$gs)
     #convert some field to be compaitle with template-parser 
     groupBy <- input$groupBy
     groupBy <- paste(groupBy, collapse = ":")
     dims <- input$dims
-    if(dims!="")
+    if(length(dims)==0){
+      output$gt_message <- renderPrint("channels not set yet!")
+    }else{
+      
       dims <- paste(dims, collapse = ",")
-    #parse pop patterns
-    pop <- input$pop
-    pop.parsed <- ""
-    ind <- grepl("A", pop)
-    if(sum(ind) == 1)
-      pop.parsed <- pop[ind]
-    else if(sum(ind) == 2)
-      pop.parsed <- "A+/-"
-    
-    ind <- grepl("B", pop)
-    if(sum(ind) == 1)
-      pop.parsed <- paste0(pop.parsed, pop[ind])
-    else if(sum(ind) == 2)
-      pop.parsed <- paste0(pop.parsed, "B+/-")
-    #add gates to gs
-    new_row <- add_pop(rv$gs
-                         , alias = input$alias
-                         , pop = pop.parsed
-                         , parent = input$parent
-                         , dims = dims
-                         , gating_method = input$gating_method
-                         , gating_args = input$gating_args
-                         , groupBy = groupBy
-                         , collapseDataForGating = input$collapseData
-                         , preprocessing_method = input$pp_method
-                         , preprocessing_args = input$pp_args)
-    # add the row to template
-    rv$gt.tbl <- rbind(rv$gt.tbl, new_row)
-    #plot the new gates
-    rv$nodes <- getNodes(rv$gs)
-    new.nodes <- setdiff(rv$nodes, nodes)
-    
-    p <- autoplot(rv$gs, new.nodes)
-    output$gt_data_plot <- renderPlot(p)
+      #parse pop patterns
+      pop <- input$pop
+      pop.parsed <- ""
+      ind <- grepl("A", pop)
+      if(sum(ind) == 1)
+        pop.parsed <- pop[ind]
+      else if(sum(ind) == 2)
+        pop.parsed <- "A+/-"
+      
+      ind <- grepl("B", pop)
+      if(sum(ind) == 1)
+        pop.parsed <- paste0(pop.parsed, pop[ind])
+      else if(sum(ind) == 2)
+        pop.parsed <- paste0(pop.parsed, "B+/-")
+      #add gates to gs
+      new_row <- try(add_pop(rv$gs
+                             , alias = input$alias
+                             , pop = pop.parsed
+                             , parent = input$parent
+                             , dims = dims
+                             , gating_method = input$gating_method
+                             , gating_args = input$gating_args
+                             , groupBy = groupBy
+                             , collapseDataForGating = input$collapseData
+                             , preprocessing_method = input$pp_method
+                             , preprocessing_args = input$pp_args)
+      )
+      if(class(new_row)=="try-error")
+        output$gt_message <- renderPrint(new_row)
+      else{
+        # add the row to template
+        rv$gt.tbl <- rbind(rv$gt.tbl, new_row)
+        
+        #plot the new gates
+        rv$nodes <- getNodes(rv$gs)
+        rv$new.nodes <- setdiff(rv$nodes, nodes)
+        output$gt_data_plot <- renderPlot({
+          autoplot(rv$gs[1], rv$new.nodes)
+        })  
+      }
+      
+    }
+})
+  
+  #undo gate
+  observeEvent(input$bt_undo, {
+    #restore gs
+    for(toRm in rv$new.nodes)
+      Rm(toRm, rv$gs)
+    #restore template
+    rv$gt.tbl <- rv$gt.tbl[-nrow(rv$gt.tbl), ]
   })
   plt = reactive({
         h = digest::digest(input$selnode)

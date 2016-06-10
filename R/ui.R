@@ -157,8 +157,9 @@ body <- dashboardBody(
                                      ,tabPanel(title = "Gating Tree", value = "tree_tab", icon = icon("sitemap")
                                                # ,selectInput("sn_select", choices = c("select one sample ---" = ""), label = NULL)
                                                # ,checkboxInput("isBool", "Show boolean gates")
-                                               ,div(div(diagonalNetworkOutput("tree",width="400px",height="300px"),
-                                                       style="display:inline-block;float:left;")
+                                               ,div(div(
+                                                        diagonalNetworkOutput("tree",width="400px",height="300px")
+                                                        ,style="display:inline-block;float:left;")
                                                    ,div(imageOutput("gateplot",width = "300px",height="300px")
                                                         ,style="margin-left:400px;", id = "tabSet")
                                                    ,style="width:100%;height:100%;"
@@ -182,14 +183,24 @@ body <- dashboardBody(
             
                      
                                ,div(
-                                   div(textInput("alias", label="Population name", value='')
-                                      ,style="display:inline-block;float:left;") 
-                                  , div(selectInput("parent", choices="", label='Select Parent Population')
-                                        ,style="display:inline-block;float:left;") 
-                                  , div(selectizeInput("dims", choices="", label='Channels', multiple =TRUE
-                                                , options = list(maxItems = 2)
-                                               )
-                                        ,style="display:inline-block;float:left;") 
+                                   div(
+                                       div(selectInput("parent", choices="", label='Select Parent Population')
+                                             
+                                          , selectizeInput("dims", choices="", label='Channels', multiple =TRUE
+                                                              , options = list(maxItems = 2)
+                                                             )
+                                          , myActionButton("bt_plot_data",label="plot data")
+                                          , style="display:inline-block;float:left;"
+                                            )
+                                        
+                                      
+                                      , div(plotOutput("gt_data_plot", width = 400, height = 300)
+                                            , style="display:inline-block;float:left;"
+                                            )
+                                   )
+                                   ,div(textInput("alias", label="Population name", value='')
+                                       # ,style="display:inline-block;float:left;"
+                                       ) 
                                   , div(selectInput("pop", choices=c("A+","A-","B+","B-"), label='Population pattern', multiple =TRUE)
                                         ,style="display:inline-block;float:left;") 
                                   , div(selectInput("gating_method",
@@ -215,17 +226,14 @@ body <- dashboardBody(
                                   ,style="display:inline-block")
                                ,div(
                                      
-                                    myActionButton("bt_plot_data",label="plot data")
-                                          
                                     
+                                     myActionButton("bt_plot_tree",label="plot tree")
                                     , myActionButton("bt_apply_gate",label="add gate")
+                                    , myActionButton("bt_undo",label="undo")
                                     
                                       
                                    )
-                               , div(
-                                    plotOutput("gt_data_plot")
-                                    )
-                                    
+                            , div(verbatimTextOutput("gt_message"),style='width:90%')     
                                 )
                      
             
