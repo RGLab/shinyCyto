@@ -359,22 +359,24 @@ function(input, output,session){
   })
   
   ###init template tbl
-  rv$gt.tbl <- data.frame(alias = NA
-                      , pop = NA
-                      , parent = NA
-                      , dims = NA
-                      , gating_method = NA
-                      , gating_args = NA
-                      , collapseDataForGating = NA
-                      , groupBy = NA
-                      , preprocessing_method = NA
-                      , preprocessing_args = NA
+  rv$gt.tbl <- data.frame(alias = character(0)
+                      , pop = character(0)
+                      , parent = character(0)
+                      , dims = character(0)
+                      , gating_method = character(0)
+                      , gating_args = character(0)
+                      , collapseDataForGating = logical(0)
+                      , groupBy = character(0)
+                      , preprocessing_method = character(0)
+                      , preprocessing_args = character(0)
                     )
   #update template table view
   observeEvent(rv$gt.tbl,{
                 output$gt_tbl <- DT::renderDataTable(datatable(rv$gt.tbl
                                                                , rownames = FALSE
-                                                               ,selection = list(mode = "single", selected = 1)
+                                                               , selection = list(mode = "single", selected = 1)
+                                                               , extensions = "Buttons"
+                                                               , options = list(dom = "Bfrtip", buttons = c("copy", "csv", "excel", "pdf", "print"))
                 )
                 
                 , server = FALSE
@@ -465,7 +467,7 @@ function(input, output,session){
                              , gating_method = input$gating_method
                              , gating_args = input$gating_args
                              , groupBy = groupBy
-                             , collapseDataForGating = input$collapseData
+                             , collapseDataForGating = as.logical(input$collapseData)
                              , preprocessing_method = input$pp_method
                              , preprocessing_args = input$pp_args)
       )
