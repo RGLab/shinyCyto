@@ -55,90 +55,115 @@ body <- dashboardBody(
             )
     ,tabItem("GatingTemplate"
             ,DT::dataTableOutput("gt_tbl")
-            ,div(
-                  div(id = "plot controls"
-                        , selectInput("parent", choices="", label='Select Parent Population')
-                        
+            
+                ,fluidRow(
+                  column(2,
+                      selectInput("parent", choices="", label='Select Parent Population')
+                        , bsTooltip("parent"
+                                    , title = "Parent population specifies the data where the gates will be applied on"
+                                    , "right"
+                                    )
+                        , br()
+                      
                         , selectizeInput("dims", choices="", label='Channels', multiple =TRUE
                                          , options = list(maxItems = 2)
                                           )
+                        , bsTooltip("dims", title = "specifying the dimensions(1d or 2d) used for gating", "right")
+                        , br()
+                      
                         , checkboxInput("collapseData", label = "collapse data for gating")
-                          
-                        , myActionButton("bt_plot_data",label="plot data")
-                        , style="display:inline-block;float:left;"
+                        , bsTooltip("collapseData", title = "When checked, data is collapsed (within the group if groupBy specified) before gating and the gate is replicated across collapsed samples. If unchecked,then groupBy argument is only used by preprocessing and ignored by gating.", "right")
+                        , br()  
+                      
+                        , bsButton("bt_plot_data",label="plot data", style = "primary")
+                        
                       )
-                    
-                  #plot  
-                  , div(plotOutput("gt_data_plot", width = 400, height = 300)
-                        , style="display:inline-block")
-                    
-                 ,tags$table(
-                      tags$tr(
-                              tags$td(
-                                div(mytextInput.typeahead("alias"
-                                               , label ="Population name"
-                                               , local = data.frame(name = common_pop_names)
-                                               , valueKey = "name"
-                                               , tokens = seq_along(common_pop_names)
-                                               , template = "{{name}}"
-                                                )
-                                    , style="display:inline-block;float:left;")
-                            
+                  , column(10
+                        #plot  
+                          , plotOutput("gt_data_plot", width = 400, height = 300)
+                        
+                        )
+                  )
+            ,fluidRow(
+              column(2,
+                      mytextInput.typeahead("alias"
+                                           , label ="Population name"
+                                           , local = data.frame(name = common_pop_names)
+                                           , valueKey = "name"
+                                           , tokens = seq_along(common_pop_names)
+                                           , template = "{{name}}"
+                                            )
+                    , bsTooltip("alias"
+                                , title = "a name used label the cell population, the path composed by the alias and its precedent nodes (e.g. /root/A/B/NAME) has to be uniquely identifiable."
+                                , "right"
+                                , options = list(container = "body")
+                                )
+                  )
                               
-                  
-                     , div(selectInput("pop", choices=c("A+","A-","B+","B-"), label='Population pattern', multiple =TRUE)
-                        , style="display:inline-block;float:left;") 
-                      , div(selectInput("groupBy", label = "Group By", choices = "", multiple = TRUE)
-                            , style="display:inline-block;float:left;")
-                     
-                          )
+              , column(2
+                     , selectInput("pop"
+                                 , choices=c("A+","A-","B+","B-")
+                                 , label='Population pattern'
+                                 , multiple =TRUE)
+                     , bsTooltip("pop"
+                                 , title = "population patterns tells the algorithm which side (postive or negative) of 1d gate or which quadrant of 2d gate to be kept when it is in the form of 'A+/-B+/-', 'A' and 'B' should be the full name (or a substring as long as it is unqiuely matched) of either channel or marker of the flow data"
+                                 , "right"
+                                 , options = list(container = "body")
+                                 )
+                      ) 
+              , column(2
+                      , selectInput("groupBy", label = "Group By", choices = "", multiple = TRUE)
+                      , bsTooltip("groupBy", title = "samples are split into groups by the unique combinations of study variable (i.e. column names of pData,e.g.“PTID:VISITNO”). when split is numeric, then samples are grouped by every N samples", "right")
                       )
-                    , tags$tr(
-                            tags$td(
-                              div(selectInput("gating_method",
+              )
+            , fluidRow(
+               column(2
+                       , selectInput("gating_method",
                                         choices = as.list(gating_methods),
                                         label="Gating Method",
                                         selected = "mindensity"
                                     )
-                                  , style="display:inline-block;float:left;")    
-                        
-                              , div(textInput("gating_args", label="Gating Parameters", value='')
-                                            , style="display:inline-block;float:left;")
-                              , bsButton("open_gate_control", "...")
-                              , bsModal("gating_control", "gating_args", "open_gate_control", uiOutput("gate_args_inputs"))
-                              )
-                            )
-                  
-                  , tags$tr(
-                            tags$td(
-                              div(selectInput("pp_method",
+                      )
+#                               , textInput("gating_args", label="Gating Parameters", value='')
+              , column(2
+                       , br()
+                       ,bsButton("open_gate_control", "Gating Parameters...", style = "primary")
+                      , bsModal("gating_control", "gating_args", "open_gate_control", uiOutput("gate_args_inputs"))
+                      )
+               )    
+            , fluidRow(
+                column(2
+                     ,selectInput("pp_method",
                                     choices = c("---" = "", as.list(pp_methods)),
                                     label = "Preprocessing Method"
                                     , selected = ""
                                   )
-                                  , style="display:inline-block;float:left;")
-                            ,div(textInput("pp_args", label="Preprocessing parameters", value='')
-                                 , style="display:inline-block;float:left;")
-                              )
-                            )
-    
-                  , tags$tr(
-                        tags$td(
-                          div(myActionButton("bt_plot_tree",label="plot tree")
-                              , busyIndicator(text = "conputing the gates..")
-                              , myActionButton("bt_apply_gate",label="add gate")
-                              , myActionButton("bt_undo",label="undo")
-                              , style="display:inline-block;float:left;"
-                              )
+                      )
+                , column(2
+                     , br()
+                    , bsButton("open_pp_control", "Preprocessing Parameters...", style = "primary")
                         )
-                     )
-                  , tags$tr(tags$td(verbatimTextOutput("gt_message"),style='width:90%'))
-                
+                )
+    
+                 
+          , fluidRow(
+              column(2
+                   ,bsButton("bt_plot_tree",label="plot tree", style = "primary")
+                  , busyIndicator(text = "conputing the gates..")
+                  , bsButton("bt_apply_gate",label="add gate", style = "primary")
+                  , bsButton("bt_undo",label="undo", style = "primary")
+                              
+                  )
+               )
+        , fluidRow(
+              column(12
+                    , verbatimTextOutput("gt_message")
+                    )
+                )     
               )
             )
     )
-  )
-)
+  
 
 dashboardPage(
   

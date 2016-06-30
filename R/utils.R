@@ -1,11 +1,11 @@
 common_pop_names <- c("boundary", "bcell" ,"lymph", "live","tcell", "transitional"
                       , "debris", "nonDebris", "singlet"
                       , "cd3", "cd4", "cd8")
-myActionButton <- function (inputId, label, icon = NULL, ...) 
-{
-  tags$button(id = inputId, type = "button", class = "btn btn-primary action-button", 
-              list(icon, label), ...)
-}
+# myActionButton <- function (inputId, label, icon = NULL, ...) 
+# {
+#   tags$button(id = inputId, type = "button", class = "btn btn-primary action-button", 
+#               list(icon, label), ...)
+# }
 
 
 helpPopup <- function(title, content,
