@@ -432,6 +432,18 @@ function(input, output,session){
       output$gt_data_plot <- renderPlot(plot(rv$gs))
   })
   
+  observeEvent(input$gating_method, {
+    output$gate_args_inputs <- renderUI({
+      if(input$gating_method == "mindensity"){
+        list(sliderInput("gate_range", label = "gate_range", min = 0, max = 6, value = c(1,3))
+              , numericInput("adjust", "adjust", value = 2, min = 1, max = 4, step = 0.5)
+              , numericInput("num_peaks", "num_peaks", value = 2, min = 1, max = 4, step = 1)
+              , numericInput("min", "min", value = 0)
+              , numericInput("max", "max", value = 0)
+        )
+      }
+    })
+  })
   #add and plot the gate
   observeEvent(input$bt_apply_gate, {
     nodes <- getNodes(rv$gs)

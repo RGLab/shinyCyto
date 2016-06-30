@@ -4,6 +4,7 @@ library(DT)
 library(shinyFiles)
 library(networkD3)
 library(shinysky)
+library(shinyBS)
 source("utils.R")
 source("import_tab.R")
 source("gs_menu_tab.R")
@@ -103,7 +104,8 @@ body <- dashboardBody(
                         
                               , div(textInput("gating_args", label="Gating Parameters", value='')
                                             , style="display:inline-block;float:left;")
-                            
+                              , bsButton("open_gate_control", "...")
+                              , bsModal("gating_control", "gating_args", "open_gate_control", uiOutput("gate_args_inputs"))
                               )
                             )
                   
