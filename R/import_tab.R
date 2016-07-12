@@ -5,11 +5,11 @@ import_tab <- function(datadirectory){
             div(textInput("path_import",label = "workspaces path", value = datadirectory), style="display:inline-block")
             ,div(shinyDirButton("ws_dir_btn",label = "choose...", title = "Please select a folder", buttonType = "primary"),style="display:inline-block")
             
-            # , myActionButton(inputId = "refresh_import",label = "Scan")
+            # , bsButton(inputId = "refresh_import",label = "Scan")
             
             , div(h6(DT::dataTableOutput(outputId = "file_table")))
             ,verbatimTextOutput("message1")
-            , myActionButton("open_ws",label="next-->")
+            , bsButton("open_ws",label="next-->")
             , id = "ws_select_tab" 
           )
           
@@ -68,10 +68,10 @@ import_tab <- function(datadirectory){
                        )
                        ,hidden(verbatimTextOutput("message2"))
                        , div(
-                         div(myActionButton("back_to_ws",label="<--back")
+                         div(bsButton("back_to_ws",label="<--back")
                              ,style="display:inline-block;"
                          )
-                         ,disabled(div(myActionButton("parse_ws",label = "Parse Workspace")
+                         ,disabled(div(bsButton("parse_ws",label = "Parse Workspace")
                                        ,style="display:inline-block;"
                          )
                          )

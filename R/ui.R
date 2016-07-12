@@ -42,7 +42,7 @@ body <- dashboardBody(
               , box(shinyDirButton("gs_dir_btn",label = "choose GatingSet ...", title = "Please select a folder", buttonType = "primary")
                     , textInput("path_gs", label = "", value = "/loc/no-backup/mike/test_gs"#file.path(datadirectory, "gs_manual")
                                 )
-                    , myActionButton(inputId = "load",label = "Load Data")
+                    , bsButton(inputId = "load",label = "Load Data")
                     , div(verbatimTextOutput("message"),style='width:90%')
                     , title = "Load GatingSets", solidHeader = TRUE, status = "primary", width = NULL
                     )
@@ -128,7 +128,11 @@ body <- dashboardBody(
               , column(2
                        , br()
                        ,bsButton("open_gate_control", "Gating Parameters...", style = "primary")
-                      , bsModal("gating_control", "gating_args", "open_gate_control", uiOutput("gate_args_inputs"))
+                      , bsModal("gating_control"
+                                # , "gating_args"
+                                , trigger = "open_gate_control"
+                                , uiOutput("gate_args_inputs")
+                                )
                       )
                )    
             , fluidRow(
