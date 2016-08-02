@@ -68,11 +68,7 @@ function(input, output,session){
   
   rv = reactiveValues()
   
-  observeEvent(input$tabset,{
-    js$fire()
-  })
 
-  
   #-------- read file info selected folder--------
   
   # observeEvent(input$refresh_import,{

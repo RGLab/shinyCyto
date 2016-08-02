@@ -11,7 +11,6 @@ source("gs_menu_tab.R")
 
 sidebar <- dashboardSidebar(
    useShinyjs()
-  , extendShinyjs(script = "www/actions.js")
   , sidebarMenu(
     
     menuItem("Import workspaces", tabName = "Import", icon = icon("arrow-right"))
