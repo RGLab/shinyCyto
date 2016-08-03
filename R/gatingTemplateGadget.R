@@ -18,115 +18,121 @@ gatingTemplateGadget <- function(gs){
         gadgetTitleBar("Build a gating template")
         
         , DT::dataTableOutput("gt_tbl")
-        
-        ,fluidRow(
-          column(2,
-                 selectInput("parent", choices="", label='Select Parent Population')
-                 , bsTooltip("parent"
-                             , title = "Parent population specifies the data where the gates will be applied on"
-                             , "right"
-                 )
-                 , br()
-                 
-                 , selectizeInput("dims", choices="", label='Channels', multiple =TRUE
-                                  , options = list(maxItems = 2)
-                 )
-                 , bsTooltip("dims", title = "specifying the dimensions(1d or 2d) used for gating", "right")
-                 , br()
-                 
-                 , checkboxInput("collapseData", label = "collapse data for gating")
-                 , bsTooltip("collapseData", title = "When checked, data is collapsed (within the group if groupBy specified) before gating and the gate is replicated across collapsed samples. If unchecked,then groupBy argument is only used by preprocessing and ignored by gating.", "right")
-                 , br()  
-                 
-                 , bsButton("bt_plot_data",label="plot data", style = "primary")
-                 
-          )
-          , column(10
-                   #plot  
-                   , plotOutput("gt_data_plot", width = 400, height = 300)
+        , miniContentPanel(
+          fluidRow(
+            column(2,
+                   selectInput("parent", choices="", label='Select Parent Population')
+                   , bsTooltip("parent"
+                               , title = "Parent population specifies the data where the gates will be applied on"
+                               , "right"
+                   )
+                   , br()
                    
+                   , selectizeInput("dims", choices="", label='Channels', multiple =TRUE
+                                    , options = list(maxItems = 2)
+                   )
+                   , bsTooltip("dims", title = "specifying the dimensions(1d or 2d) used for gating", "right")
+                   , br()
+                   
+                   , checkboxInput("collapseData", label = "collapse data for gating")
+                   , bsTooltip("collapseData", title = "When checked, data is collapsed (within the group if groupBy specified) before gating and the gate is replicated across collapsed samples. If unchecked,then groupBy argument is only used by preprocessing and ignored by gating.", "right")
+                   , br()  
+                   
+                   , bsButton("bt_plot_data",label="plot data", style = "primary")
+                   
+            )
+            , column(10
+                     #plot  
+                     , plotOutput("gt_data_plot", width = 400, height = 300)
+                     
+            )
           )
-        )
-        ,fluidRow(
-          column(2,
-                 mytextInput.typeahead("alias"
-                                       , label ="Population name"
-                                       , local = data.frame(name = common_pop_names)
-                                       , valueKey = "name"
-                                       , tokens = seq_along(common_pop_names)
-                                       , template = "{{name}}"
-                 )
-                 , bsTooltip("alias"
-                             , title = "a name used label the cell population, the path composed by the alias and its precedent nodes (e.g. /root/A/B/NAME) has to be uniquely identifiable."
-                             , "right"
-                             , options = list(container = "body")
-                 )
-          )
-          
-          , column(2
-                   , selectInput("pop"
-                                 , choices=c("A+","A-","B+","B-")
-                                 , label='Population pattern'
-                                 , multiple =TRUE)
-                   , bsTooltip("pop"
-                               , title = "population patterns tells the algorithm which side (postive or negative) of 1d gate or which quadrant of 2d gate to be kept when it is in the form of 'A+/-B+/-', 'A' and 'B' should be the full name (or a substring as long as it is unqiuely matched) of either channel or marker of the flow data"
+          ,fluidRow(
+            column(2,
+                   mytextInput.typeahead("alias"
+                                         , label ="Population name"
+                                         , local = data.frame(name = common_pop_names)
+                                         , valueKey = "name"
+                                         , tokens = seq_along(common_pop_names)
+                                         , template = "{{name}}"
+                   )
+                   , bsTooltip("alias"
+                               , title = "a name used label the cell population, the path composed by the alias and its precedent nodes (e.g. /root/A/B/NAME) has to be uniquely identifiable."
                                , "right"
                                , options = list(container = "body")
                    )
-          ) 
-          , column(2
-                   , selectInput("groupBy", label = "Group By", choices = "", multiple = TRUE)
-                   , bsTooltip("groupBy", title = "samples are split into groups by the unique combinations of study variable (i.e. column names of pData,e.g.“PTID:VISITNO”). when split is numeric, then samples are grouped by every N samples", "right")
+            )
+            
+            , column(2
+                     , selectInput("pop"
+                                   , choices=c("A+","A-","B+","B-")
+                                   , label='Population pattern'
+                                   , multiple =TRUE)
+                     , bsTooltip("pop"
+                                 , title = "population patterns tells the algorithm which side (postive or negative) of 1d gate or which quadrant of 2d gate to be kept when it is in the form of 'A+/-B+/-', 'A' and 'B' should be the full name (or a substring as long as it is unqiuely matched) of either channel or marker of the flow data"
+                                 , "right"
+                                 , options = list(container = "body")
+                     )
+            ) 
+            , column(2
+                     , selectInput("groupBy", label = "Group By", choices = "", multiple = TRUE)
+                     , bsTooltip("groupBy", title = "samples are split into groups by the unique combinations of study variable (i.e. column names of pData,e.g.“PTID:VISITNO”). when split is numeric, then samples are grouped by every N samples", "right")
+            )
           )
-        )
-        , fluidRow(
-          column(2
-                 , selectInput("gating_method",
-                               choices = as.list(gating_methods),
-                               label="Gating Method",
-                               selected = "mindensity"
-                 )
-          )
-          #                               , textInput("gating_args", label="Gating Parameters", value='')
-          , column(2
-                   , br()
-                   ,bsButton("open_gate_control", "Gating Parameters...", style = "primary")
-                   , bsModal("gating_control"
-                             # , "gating_args"
-                             , trigger = "open_gate_control"
-                             , uiOutput("gate_args_inputs")
+          , fluidRow(
+            column(2
+                   , selectInput("gating_method",
+                                 choices = as.list(gating_methods),
+                                 label="Gating Method",
+                                 selected = "mindensity"
                    )
+            )
+                                          
+            , column(2
+                     , br()
+                     ,bsButton("open_gate_control", "Gating Parameters...", style = "primary")
+                     , bsModal("gating_control"
+                               # , "gating_args"
+                               , trigger = "open_gate_control"
+                               , uiOutput("gate_args_inputs")
+                               # , bsButton("gating_args_apply", "apply", style = "primary")
+                     )
+            )
+          )    
+          , fluidRow(
+            column(2
+                   ,selectInput("pp_method",
+                                choices = c("---" = "", as.list(pp_methods)),
+                                label = "Preprocessing Method"
+                                , selected = ""
+                   )
+            )
+            , column(2
+                     , br()
+                     , bsButton("open_pp_control", "Preprocessing Parameters...", style = "primary")
+                     , bsModal("pp_control"
+                               , trigger = "open_pp_control"
+                               , uiOutput("pp_args_inputs")
+                     )
+            )
           )
-        )    
-        , fluidRow(
-          column(2
-                 ,selectInput("pp_method",
-                              choices = c("---" = "", as.list(pp_methods)),
-                              label = "Preprocessing Method"
-                              , selected = ""
-                 )
+          
+          
+          , fluidRow(
+            column(2
+                   ,bsButton("bt_plot_tree",label="plot tree", style = "primary")
+                   , busyIndicator(text = "conputing the gates..")
+                   , bsButton("bt_apply_gate",label="add gate", style = "primary")
+                   , bsButton("bt_undo",label="undo", style = "primary")
+                   
+            )
           )
-          , column(2
-                   , br()
-                   , bsButton("open_pp_control", "Preprocessing Parameters...", style = "primary")
-          )
+          , fluidRow(
+            column(12
+                   , verbatimTextOutput("gt_message")
+            )
+          )     
         )
-        
-        
-        , fluidRow(
-          column(2
-                 ,bsButton("bt_plot_tree",label="plot tree", style = "primary")
-                 , busyIndicator(text = "conputing the gates..")
-                 , bsButton("bt_apply_gate",label="add gate", style = "primary")
-                 , bsButton("bt_undo",label="undo", style = "primary")
-                 
-          )
-        )
-        , fluidRow(
-          column(12
-                 , verbatimTextOutput("gt_message")
-          )
-        )     
   )
   server <- function(input, output, session) {
     rv = reactiveValues()
@@ -204,18 +210,69 @@ gatingTemplateGadget <- function(gs){
         output$gt_data_plot <- renderPlot(plot(gs))
     })
     
-    observeEvent(input$gating_method, {
-      output$gate_args_inputs <- renderUI({
-        if(input$gating_method == "mindensity"){
-          list(sliderInput("gate_range", label = "gate_range", min = 0, max = 6, value = c(1,3))
-               , numericInput("adjust", "adjust", value = 2, min = 1, max = 4, step = 0.5)
-               , numericInput("num_peaks", "num_peaks", value = 2, min = 1, max = 4, step = 1)
-               , numericInput("min", "min", value = 0)
-               , numericInput("max", "max", value = 0)
-          )
-        }
-      })
+    #render gating method specific controls
+    gating_control_id <- "gating_control_id1"
+    observeEvent({input$open_gate_control}, {
+      fs <- rv$fs
+      chnl <- input$dims
+      if(!is.null(fs)&&!is.null(chnl)){
+        data.range <- range(fs[[1, use.exprs = FALSE]])[, chnl]  
+        # browser()
+        output$gate_args_inputs <- renderUI({
+          
+          if(input$gating_method == "mindensity"){
+            
+            rv$gating_module <- mindensityArgs
+            mindensityArgsUI(gating_control_id, data.range)
+            
+          }else{
+            
+            rv$gating_module <- genericArgs
+            genericArgsUI(gating_control_id)
+          }
+        })
+       
+      }
     })
+    
+    #collect gating args
+    observeEvent(input$gating_control, {
+     if(!is.null(rv$gating_module)){
+       #call gating-method-specific module 
+       gating_args_list <- callModule(rv$gating_module, gating_control_id)       
+       if(is.list(gating_args_list)){
+         rv$gating_args <- list2string(gating_args_list)
+       }else
+         rv$gating_args <- gating_args_list #generic args control already returns a string 
+       
+       
+     }
+      
+    })
+    
+    pp_control_id <- "pp_control_id1"
+    observeEvent({input$open_pp_control}, {
+        output$pp_args_inputs <- renderUI({
+            rv$pp_module <- genericArgs
+            genericArgsUI(pp_control_id)
+        })
+    })
+    
+    #collect gating args
+    observeEvent(input$pp_control, {
+      if(!is.null(rv$pp_module)){
+        #call gating-method-specific module 
+        pp_args_list <- callModule(rv$pp_module, pp_control_id)       
+        if(is.list(pp_args_list)){
+          rv$pp_args <- list2string(pp_args_list)
+        }else
+          rv$pp_args <- pp_args_list #generic args control already returns a string 
+        
+        # browser()
+      }
+      
+    })
+    
     #add and plot the gate
     observeEvent(input$bt_apply_gate, {
       nodes <- getNodes(gs)
@@ -242,6 +299,12 @@ gatingTemplateGadget <- function(gs){
           pop.parsed <- paste0(pop.parsed, pop[ind])
         else if(sum(ind) == 2)
           pop.parsed <- paste0(pop.parsed, "B+/-")
+        
+        if(is.null(rv$pp_args))
+          rv$pp_args <- ""
+        if(is.null(rv$gating_args))
+          rv$gating_args <- ""
+        # browser()
         #add gates to gs
         new_row <- try(add_pop(gs
                                , alias = input$alias
@@ -249,11 +312,11 @@ gatingTemplateGadget <- function(gs){
                                , parent = input$parent
                                , dims = dims
                                , gating_method = input$gating_method
-                               , gating_args = input$gating_args
+                               , gating_args = rv$gating_args
                                , groupBy = groupBy
                                , collapseDataForGating = as.logical(input$collapseData)
                                , preprocessing_method = input$pp_method
-                               , preprocessing_args = input$pp_args)
+                               , preprocessing_args = rv$pp_args)
         )
         if(class(new_row)=="try-error")
           output$gt_message <- renderPrint(new_row)
@@ -298,5 +361,5 @@ gatingTemplateGadget <- function(gs){
       output$gateplot = renderImage(plt(),deleteFile = FALSE)
     })
   }
-  runGadget(ui, server)
+  runGadget(ui, server, viewer = browserViewer())
 }
