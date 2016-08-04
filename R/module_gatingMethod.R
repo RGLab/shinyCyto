@@ -11,12 +11,14 @@ genericArgs <- function(input, output, session){
 #' UI for mindensity method
 mindensityArgsUI <- function(id, data_range = c(0, 6)){
   ns <- NS(id)
+  data_range <- round(data_range, digits = 1)
   rn <- round(0.2 * abs(diff(data_range)))
   preselcted <- data_range + c(rn, -rn)
-  
+  preselcted <- round(preselcted, digits = 1)
   tagList(sliderInput(ns("gate_range"), label = "gate_range"
                       , min = data_range[1], max = data_range[2]
                       , value = preselcted
+                      , sep = ""
                       )
        , numericInput(ns("adjust"), "adjust", value = 2, min = 1, max = 4, step = 0.5)
        , numericInput(ns("num_peaks"), "num_peaks", value = 2, min = 1, max = 4, step = 1)

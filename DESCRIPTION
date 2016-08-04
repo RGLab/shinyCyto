@@ -1,8 +1,27 @@
 Package: shinyCyto
 Title: What the Package Does (one line, title case)
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph)
-Depends: R (>= 3.2.0)
-License: What license is it under?
+Authors@R: person("Mike", "Jiang", email = "wjiang2@fhcrc.org", role = c("aut", "cre"))
+Description: Shiny app for openCyto framework
+Depends:
+    R (>= 3.2.0)
+Imports:
+    flowCore,
+    flowWorkspace,
+    openCyto,
+    shinyjs,
+    shinyBS,
+    shiny
+License: GPL-2
 LazyData: true
+RoxygenNote: 5.0.1
+Collate:
+    'module_gatingMethod.R'
+    'utils.R'
+    'module_gatingTemplate.R'
+    'gadget_gatingTemplate.R'
+    'global.R'
+    'module_gsMenu.R'
+    'module_parseWorkspace.R'
+    'server.R'
+    'ui.R'

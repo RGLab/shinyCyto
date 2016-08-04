@@ -28,7 +28,7 @@ helpPopup <- function(title, content,
   )
 }
 
-
+#' @importFrom jsonlite toJSON
 mytextInput.typeahead <- function (id, label, local, valueKey, tokens, template, 
                                    limit = 20) 
 {
