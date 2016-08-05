@@ -4,13 +4,13 @@ Version: 0.0.0.9000
 Authors@R: person("Mike", "Jiang", email = "wjiang2@fhcrc.org", role = c("aut", "cre"))
 Description: Shiny app for openCyto framework
 Depends:
-    R (>= 3.2.0)
+    R (>= 3.2.0),
+    shinyBS
 Imports:
     flowCore,
     flowWorkspace,
     openCyto,
     shinyjs,
-    shinyBS,
     shiny
 License: GPL-2
 LazyData: true

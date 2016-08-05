@@ -1,4 +1,3 @@
-#' @importFrom shinyBS bsButton bsTooltip bsModal
 #' @importFrom shinysky busyIndicator
 #' @include utils.R module_gatingMethod.R
 gatingTemplateUI <- function(id){
