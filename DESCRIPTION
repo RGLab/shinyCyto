@@ -20,6 +20,8 @@ Collate:
     'utils.R'
     'module_gatingTemplate.R'
     'gadget_gatingTemplate.R'
+    'module_gsTree.R'
+    'gadget_gatingTree.R'
     'global.R'
     'module_gsMenu.R'
     'module_parseWorkspace.R'
