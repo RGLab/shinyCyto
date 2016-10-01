@@ -2,21 +2,39 @@
 gatingTreeUI <- function(id){
   
   ns <- NS(id)
-  div(
-    radioButtons(ns("type"), "plot type",  choices = c("2d scatter", "1d density"), selected = "1d density", inline = TRUE)
-    ,div(
-        diagonalNetworkOutput(ns("tree")
-                                ,width="800px",height="300px"
-                                )
-          ,style="display:inline-block;float:left;"
-          )
-    ,div(
-        imageOutput(ns("gateplot"),width = "800px",height="400px")
-        # plotOutput(ns("gateplot") ,width = "300px",height="300px")
-          ,style="margin-left:400px;")
-    ,style="width:100%;height:100%;"
-    ,id = ns("tabset")
+  tagList(
+    fluidRow(
+        radioButtons(ns("type"), "plot type",  choices = c("2d scatter", "1d density"), selected = "1d density", inline = TRUE)
+    
         )
+    ,fluidRow(# ,div(
+        column(6,
+            diagonalNetworkOutput(ns("tree")
+                                    # ,width="400px",height="300px"
+                                    )
+              # ,style="display:inline-block;float:left;"
+              # )
+            )
+        ,column(6,
+        # ,div(
+            imageOutput(ns("gateplot")
+                        # ,width = "600px",height="400px"
+                        )
+            ,dataTableOutput(ns("metricstbl"))
+        )
+        # ,column(2,
+        # ,div(
+           
+          # ,style="margin-left:802px;"
+          # ,style="display:inline-block;float:left;"
+          
+        # )
+        # ,style="width:100%;height:100%;"
+        
+            # )
+        # )
+    )
+  )
 }
 
 maketreelist <- function(df, root=df[1,1]) {
@@ -41,7 +59,7 @@ maketreelist <- function(df, root=df[1,1]) {
 #' @import data.table
 #' @importFrom openCyto best.separation mindensity
 gatingTreeServer <- function(input, output, session, gs){
-  # rv = reactiveValues()
+  rv = reactiveValues()
   H = hash()
   output$tree = renderDiagonalNetwork({
         stats = getPopStats(gs[1] ,showHidden=TRUE)
@@ -55,69 +73,85 @@ gatingTreeServer <- function(input, output, session, gs){
   
 
   
-  plt = reactive({
-        node <- input$selnode
-        h = digest(node)
-        if(has.key(h,H)){
-          return(list(src = H[[h]], alt = node))
+  ns <- session$ns
+  metricsID <- ns("metricstbl")
+  
+  
+  rv$key_plot <- reactive(paste0(input$selnode, input$type))
+  
+  
+  observeEvent(rv$key_plot(),{
+    
+    key_plot <- rv$key_plot()
+    node <- input$selnode
+    if(is.null(node))
+      return(NULL)
+    tf = tempfile(fileext = ".png")
+    key_metrics <- paste0(node, "metrics")
+    #generate the plot and metrics if not run before
+    if(!has.key(key_plot, H))
+    {
+      png(file=tf,width = 300,height=300,units = "px")
+      
+      if(input$type == "2d scatter"){
+          p <- plotGate(gs, node)
+          print(p)
+      }else{
+        
+        fs <- getData(gs, node)
+        #for now we use the first sample
+        fr <- fs[[1, use.exprs = FALSE]]
+        #exclude the non-stained channels
+        pd <- pData(parameters(fr))
+        pd <- pd[!is.na(pd[["desc"]]),]
+        channels <- pd[["name"]]
+        fr <- fs[[1,channels]]
+        
+        children <- getChildren(gs, node)
+        if(length(children)==0){ # terminal node : simply plot density
+          
+          p <- autoplot(fr) 
+          p@arrange.main <- ""
+          print(p)
         }else{
-          tf = tempfile(fileext = ".png")
-          png(file=tf,width = 500,height=500,units = "px"
-              # ,res=75
-              )
+          gating.function <- mindensity
+          #otherwise plot marker selection process
+          flist <- sapply(channels, function(channel){
+            g <- gating.function(fr, channel)
+            g
+          })
+          flist <- flowWorkspace:::compact(flist)
           
+          res <- best.separation(flist, fr, debug.mode = T
+                                 # , min.percent = input$min.percent
+          )
+          p <- res[["plotObjs"]]
+          plot(p)
+          H[[key_metrics]] = res[["metrics"]]
+        
           
-          if(input$type == "2d scatter"){
-            p <- plotGate(gs, node)
-            
-            print(p)
-          }else{
-            
-            fs <- getData(gs, node)
-            #for now we use the first sample
-            fr <- fs[[1, use.exprs = FALSE]]
-            #exclude the non-stained channels
-            pd <- pData(parameters(fr))
-            pd <- pd[!is.na(pd[["desc"]]),]
-            channels <- pd[["name"]]
-            fr <- fs[[1,channels]]
-            
-            children <- getChildren(gs, node)
-            if(length(children)==0){ # terminal node : simply plot density
-              p <- autoplot(fr) 
-              p@arrange.main <- ""
-              print(p)
-            }else{
-              gating.function <- mindensity
-              #otherwise plot marker selection process
-              flist <- sapply(channels, function(channel){
-                g <- gating.function(fr, channel)
-                g
-              })
-              flist <- flowWorkspace:::compact(flist)
-              
-              p <- best.separation(flist, fr, debug.mode = T
-                                   # , min.percent = input$min.percent
-              )
-              plot(p)
-            }
-            
-            
-          }
-          
-          dev.off()
-          H[[h]] = tf
-          return(list(src = H[[h]], alt = node))
         }
-      })
+      }
+      # browser()
+      #update hash with new plot
+      dev.off()
+      H[[key_plot]] = tf
+      
+      children <- getChildren(gs, node)
+      if(length(children)!=0)
+        rv$key_metrics <- key_metrics #potentially trigger the table render
+        
+      
+      
+    }
+    
+    
+    output$gateplot = renderImage(list(src = H[[key_plot]], alt = node),deleteFile = FALSE)
+  })
 
-  observeEvent(input$selnode,{
-         
-          # browser()
-        output$gateplot = renderImage(plt(),deleteFile = FALSE)
-    })
-
-
+  observeEvent(rv$key_metrics, {
+    output$metricstbl <- renderDataTable(H[[rv$key_metrics]])      
+  })
   }
     
   

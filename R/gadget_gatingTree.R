@@ -48,7 +48,7 @@ gatingTreeApp <- function(gs){
 gatingTreeGadget <- function(gs){
   app <- gatingTreeApp(gs)
   runGadget(app
-            # , viewer = browserViewer()
+            , viewer = browserViewer()
   )
 }               
                
