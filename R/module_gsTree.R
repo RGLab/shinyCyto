@@ -76,6 +76,7 @@ gatingTreeServer <- function(input, output, session, gs){
   ns <- session$ns
   metricsID <- ns("metricstbl")
   
+  gsEnv <- getOption("openCyto")[["exaustive"]][[gs@guid]]
   
   rv$key_plot <- reactive(paste0(input$selnode, input$type))
   
@@ -86,6 +87,7 @@ gatingTreeServer <- function(input, output, session, gs){
     node <- input$selnode
     if(is.null(node))
       return(NULL)
+    
     tf = tempfile(fileext = ".png")
     key_metrics <- paste0(node, "metrics")
     #generate the plot and metrics if not run before
@@ -98,36 +100,32 @@ gatingTreeServer <- function(input, output, session, gs){
           print(p)
       }else{
         
-        fs <- getData(gs, node)
-        #for now we use the first sample
-        fr <- fs[[1, use.exprs = FALSE]]
-        #exclude the non-stained channels
-        pd <- pData(parameters(fr))
-        pd <- pd[!is.na(pd[["desc"]]),]
-        channels <- pd[["name"]]
-        fr <- fs[[1,channels]]
+        fullpath <- file.path(getParent(gs, node), basename(node))
+        marker.selection.res <- gsEnv[[fullpath]]
+        # browser()
         
-        children <- getChildren(gs, node)
-        if(length(children)==0){ # terminal node : simply plot density
+        # children <- getChildren(gs, node)
+        if(is.null(marker.selection.res)){ # terminal node : simply plot density
+          fs <- getData(gs, node)
+          #for now we use the first sample
+          fr <- fs[[1, use.exprs = FALSE]]
+          #exclude the non-stained channels
+          pd <- pData(parameters(fr))
+          pd <- pd[!is.na(pd[["desc"]]),]
+          channels <- pd[["name"]]
           
+          fr <- fs[[1,channels]]  
           p <- autoplot(fr) 
           p@arrange.main <- ""
           print(p)
         }else{
-          gating.function <- mindensity
-          #otherwise plot marker selection process
-          flist <- sapply(channels, function(channel){
-            g <- gating.function(fr, channel)
-            g
-          })
-          flist <- flowWorkspace:::compact(flist)
           
-          res <- best.separation(flist, fr, debug.mode = T
-                                 # , min.percent = input$min.percent
-          )
-          p <- res[["plotObjs"]]
+          plotEnv <- marker.selection.res[["plotEnv"]]
+          p <- as.list(plotEnv)
+          p <- gridExtra::arrangeGrob(grobs = p)
+          
           plot(p)
-          H[[key_metrics]] = res[["metrics"]]
+          H[[key_metrics]] = marker.selection.res[["metrics"]]
         
           
         }
