@@ -10,6 +10,7 @@ Imports:
     flowCore,
     flowWorkspace,
     openCyto,
+    cytoEx,
     shinyjs,
     shiny
 License: GPL-2

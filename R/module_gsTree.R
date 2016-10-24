@@ -57,7 +57,7 @@ maketreelist <- function(df, root=df[1,1]) {
 #' @importFrom DT datatable
 #' @importFrom digest digest
 #' @import data.table
-#' @importFrom openCyto best.separation mindensity
+#' @importFrom cytoEx getMetrics plot.flowClust
 gatingTreeServer <- function(input, output, session, gs){
   rv = reactiveValues()
   H = hash()
@@ -71,12 +71,10 @@ gatingTreeServer <- function(input, output, session, gs){
   
   shinyjs::js$fire()
   
-
-  
   ns <- session$ns
   metricsID <- ns("metricstbl")
   
-  gsEnv <- getOption("openCyto")[["exaustive"]][[gs@guid]]
+  # gsEnv <- getOption("openCyto")[["exhaustive"]][[gs@guid]]
   
   rv$key_plot <- reactive(paste0(input$selnode, input$type))
   
@@ -85,6 +83,7 @@ gatingTreeServer <- function(input, output, session, gs){
     
     key_plot <- rv$key_plot()
     node <- input$selnode
+    
     if(is.null(node))
       return(NULL)
     
@@ -93,19 +92,15 @@ gatingTreeServer <- function(input, output, session, gs){
     #generate the plot and metrics if not run before
     if(!has.key(key_plot, H))
     {
-      png(file=tf,width = 300,height=300,units = "px")
+      png(file=tf,width = 500,height=500,units = "px")
       
       if(input$type == "2d scatter"){
           p <- plotGate(gs, node)
           print(p)
       }else{
         
-        fullpath <- file.path(getParent(gs, node), basename(node))
-        marker.selection.res <- gsEnv[[fullpath]]
-        # browser()
-        
-        # children <- getChildren(gs, node)
-        if(is.null(marker.selection.res)){ # terminal node : simply plot density
+        metrics <- getMetrics(gs, node)
+        if(is.null(metrics)){ # terminal node : simply plot density
           fs <- getData(gs, node)
           #for now we use the first sample
           fr <- fs[[1, use.exprs = FALSE]]
@@ -120,12 +115,8 @@ gatingTreeServer <- function(input, output, session, gs){
           print(p)
         }else{
           
-          plotEnv <- marker.selection.res[["plotEnv"]]
-          p <- as.list(plotEnv)
-          p <- gridExtra::arrangeGrob(grobs = p)
-          
-          plot(p)
-          H[[key_metrics]] = marker.selection.res[["metrics"]]
+          plot.flowClust(gs, node)
+          H[[key_metrics]] = metrics
         
           
         }
