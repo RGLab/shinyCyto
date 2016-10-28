@@ -16,11 +16,15 @@ gatingTreeUI <- function(id){
               # )
             )
         ,column(6,
-        # ,div(
-            imageOutput(ns("gateplot")
-                        # ,width = "600px",height="400px"
+                fluidRow(
+                            imageOutput(ns("gateplot")
+                            # ,width = "600px"
+                            , height="auto"
+                            )
                         )
-            ,dataTableOutput(ns("metricstbl"))
+                ,fluidRow(
+                        dataTableOutput(ns("metricstbl"))
+                )
         )
         # ,column(2,
         # ,div(
@@ -140,7 +144,7 @@ gatingTreeServer <- function(input, output, session, gs){
     children <- getChildren(gs, node)
     if(length(children)!=0){
       shinyjs::show(metricsID)
-      output$metricstbl <- renderDataTable(H[[rv$key_metrics]])
+      output$metricstbl <- renderDataTable(H[[rv$key_metrics]], options = list(paging = FALSE, searching = FALSE))
     }else
       shinyjs::hide(metricsID)
       
