@@ -89,6 +89,8 @@ gatingTreeServer <- function(input, output, session, gs){
     
     tf = tempfile(fileext = ".png")
     key_metrics <- paste0(node, "metrics")
+    rv$key_metrics <- key_metrics #potentially trigger the table render
+    
     #generate the plot and metrics if not run before
     if(!has.key(key_plot, H))
     {
@@ -126,11 +128,6 @@ gatingTreeServer <- function(input, output, session, gs){
       dev.off()
       H[[key_plot]] = tf
       
-      children <- getChildren(gs, node)
-      if(length(children)!=0)
-        rv$key_metrics <- key_metrics #potentially trigger the table render
-        
-      
       
     }
     
@@ -139,7 +136,14 @@ gatingTreeServer <- function(input, output, session, gs){
   })
 
   observeEvent(rv$key_metrics, {
-    output$metricstbl <- renderDataTable(H[[rv$key_metrics]])      
+    node <- input$selnode
+    children <- getChildren(gs, node)
+    if(length(children)!=0){
+      shinyjs::show(metricsID)
+      output$metricstbl <- renderDataTable(H[[rv$key_metrics]])
+    }else
+      shinyjs::hide(metricsID)
+      
   })
   }
     
