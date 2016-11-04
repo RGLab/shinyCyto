@@ -106,7 +106,8 @@ gatingTreeServer <- function(input, output, session, gs){
       }else{
         
         metrics <- getMetrics(gs, node)
-        if(is.null(metrics)){ # terminal node : simply plot density
+        has.plot.flowClust <- length(ls(cytoEx:::get.openCyto.exhaustive(gs, node)[["plotEnv"]])) > 0
+        if(!has.plot.flowClust){ # terminal node : simply plot density
           fs <- getData(gs, node)
           #for now we use the first sample
           fr <- fs[[1, use.exprs = FALSE]]
@@ -141,7 +142,7 @@ gatingTreeServer <- function(input, output, session, gs){
 
   observeEvent(rv$key_metrics, {
     node <- input$selnode
-    children <- getChildren(gs, node)
+    children <- getChildren(gs[[1]], node)
     if(length(children)!=0){
       shinyjs::show(metricsID)
       output$metricstbl <- renderDataTable(H[[rv$key_metrics]], options = list(paging = FALSE, searching = FALSE))
